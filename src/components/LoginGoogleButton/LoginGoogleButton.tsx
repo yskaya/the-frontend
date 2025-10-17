@@ -1,6 +1,5 @@
 import React from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
-import { useRouter } from 'next/router';
 import { loginGoogle } from '@/api/auth.api';
 import { useAuthContext } from '@/context/Auth/AuthProvider';
 
@@ -14,19 +13,40 @@ export const LoginGoogleButton: React.FC<LoginGoogleButtonProps> = ({
   children = "Login with Google"
 }) => {
   const { setUser } = useAuthContext();
-  const router = useRouter();
 
   const handleGoogleLogin = useGoogleLogin({
     onSuccess: async (codeResponse) => {
-      const response = await loginGoogle(codeResponse.code);
-      if (response) {
-        setUser(response.user);
-        router.push('/dashboard');
+      console.log('✅ Google OAuth success callback triggered');
+      console.log('Code response:', codeResponse);
+      
+      try {
+        const response = await loginGoogle(codeResponse.code);
+        console.log('API response:', response);
+        
+        if (response && response.user) {
+          console.log('Login successful, user:', response.user);
+          setUser(response.user);
+          
+          // Wait a bit to ensure cookies are fully set by browser
+          console.log('Waiting for cookies to be set...');
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          console.log('Cookies after login:', document.cookie);
+          console.log('Redirecting to dashboard...');
+          
+          // Full page reload to ensure cookies are sent to server-side getServerSideProps
+          window.location.href = '/dashboard';
+        } else {
+          console.error('Login failed - no user in response');
+        }
+      } catch (error) {
+        console.error('Login error:', error);
       }
-      // If null, error notification already shown by API client
     },
-    onError: (err) => console.error('Google OAuth failed:', err),
-    flow: 'auth-code', //implicit || auth-code
+    onError: (err) => {
+      console.error('❌ Google OAuth error:', err);
+    },
+    flow: 'auth-code',
     scope: 'email profile openid'
   });
 

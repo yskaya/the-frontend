@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { validate } from '@/api/auth.api';
 
 interface User {
@@ -9,37 +9,50 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  loading: boolean;
   setUser: (user: User | null) => void;
-  validateMe: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export const useAuthContext = () => useContext(AuthContext);
 
+/**
+ * ✨ Simplified AuthProvider - works with server-side auth
+ * 
+ * Server-side pages (with getServerSideProps) handle:
+ * - Initial auth validation
+ * - Redirects for protected routes
+ * - User data as props
+ * 
+ * This context is for:
+ * - Storing user state for client-side access (no prop drilling)
+ * - Updating user after login/logout
+ * - Optional: refreshing user data on client-side
+ */
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  const validateMe = useCallback(async () => {
-    const data = await validate();
-    if (data) {
-      setUser(data as User);
-    } else {
+  // Optional: Refresh user data from API (useful after updates)
+  const refreshUser = useCallback(async () => {
+    try {
+      const data = await validate();
+      if (data) {
+        setUser(data as User);
+      } else {
+        setUser(null);
+      }
+    } catch (error) {
+      console.error('Failed to refresh user:', error);
       setUser(null);
     }
-    setLoading(false);
   }, []);
-
-  // validateMe is now called in ProtectedRoute component
 
   return (
     <AuthContext.Provider value={{
       user,
-      loading,
       setUser,
-      validateMe,
+      refreshUser,
     }}>
       {children}
     </AuthContext.Provider>

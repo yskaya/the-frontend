@@ -1,15 +1,16 @@
-import React, { useEffect } from 'react';
-import { useRouter } from 'next/router';
+import { GetServerSideProps } from 'next';
 
-const HomePage = () => {
-  const router = useRouter();
+// Homepage instantly redirects to dashboard (server-side)
+// Users never see this component render
+export default function HomePage() {
+  return null;
+}
 
-  useEffect(() => {
-    // Redirect to dashboard
-    router.replace('/dashboard');
-  }, [router]);
-
-  return <div>Redirecting...</div>;
+export const getServerSideProps: GetServerSideProps = async () => {
+  return {
+    redirect: {
+      destination: '/dashboard',
+      permanent: false,
+    },
+  };
 };
-
-export default HomePage;
