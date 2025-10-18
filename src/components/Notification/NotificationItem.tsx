@@ -74,16 +74,10 @@ export const NotificationItem: React.FC<NotificationItemProps> = ({ notification
         {/* Icon */}
         {getIcon()}
         
-        {/* Title & Message - Bold title with line break between sentences */}
+        {/* Title & Message - Inline with bold title */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm text-gray-900 dark:text-gray-100">
-            <strong className="font-semibold">{notification.title}</strong>.{' '}
-            {notification.message.split('\n').map((line, index) => (
-              <span key={index}>
-                {line}
-                {index < notification.message.split('\n').length - 1 && <br />}
-              </span>
-            ))}
+          <p className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-line">
+            <strong className="font-semibold">{notification.title}</strong>. {notification.message}
           </p>
         </div>
         

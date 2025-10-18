@@ -1,36 +1,109 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PayPay Frontend
 
-## Getting Started
+Modern Next.js application with React Query, Server-Side Rendering, and beautiful error handling.
 
-First, run the development server:
+## 🚀 Quick Start
 
 ```bash
+# Install dependencies
+npm install
+
+# Install React Query
+npm install @tanstack/react-query @tanstack/react-query-devtools
+
+# Start development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📚 Documentation
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Comprehensive documentation is in the [`docs/`](./docs/) folder:
 
-## Learn More
+- **[docs/README.md](./docs/README.md)** - Start here! Documentation index
+- **[docs/Structure.md](./docs/Structure.md)** - Project organization
+- **[docs/Auth.md](./docs/Auth.md)** - Authentication system
+- **[docs/Errors.md](./docs/Errors.md)** - Error handling system
+- **[docs/SSR-vs-Client.md](./docs/SSR-vs-Client.md)** - Server vs client rendering
+- **[docs/Types.md](./docs/Types.md)** - TypeScript organization
+- **[docs/Request-Libraries.md](./docs/Request-Libraries.md)** - Axios + React Query
+- **[BACKLOG.md](./BACKLOG.md)** - Production roadmap and backlog
 
-To learn more about Next.js, take a look at the following resources:
+## 🎯 Tech Stack
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Framework:** Next.js 14 (Pages Router)
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS
+- **HTTP:** Axios
+- **Data:** React Query
+- **Auth:** Google OAuth + JWT
+- **State:** React Context
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🏗️ Project Structure
 
-## Deploy on Vercel
+```
+src/
+├── api/              ← Axios client
+├── components/       ← Shared UI (Notification)
+├── features/         ← Business logic (auth, errors)
+├── lib/              ← Utilities (queryClient)
+└── pages/            ← Next.js routes
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+See [docs/structure.md](./docs/structure.md) for details.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## ✅ Features
+
+- ✅ Server-side auth (instant redirects, no flicker)
+- ✅ React Query (caching, refetching, Suspense)
+- ✅ Beautiful error notifications (Adobe Spectrum style)
+- ✅ TypeScript (fully typed)
+- ✅ Feature-based architecture (scalable)
+- ✅ React Query DevTools (visual debugging)
+
+## 🔧 Environment Variables
+
+Create `.env.local`:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5555/api
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-google-client-id
+```
+
+## 📦 Available Scripts
+
+```bash
+npm run dev          # Start dev server
+npm run build        # Build for production
+npm start            # Start production server
+npm run lint         # Run ESLint
+```
+
+## 🐛 Troubleshooting
+
+### TypeScript Errors?
+
+```bash
+rm -rf .next tsconfig.tsbuildinfo
+npm run dev
+```
+
+### Stale Cache?
+
+```bash
+rm -rf .next node_modules/.cache
+npm run dev
+```
+
+## 📖 Learn More
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [React Query Documentation](https://tanstack.com/query/latest)
+- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
+
+## 🎉 You're Ready!
+
+Start with [docs/README.md](./docs/README.md) for comprehensive guides.
+
+**Happy coding!** 🚀

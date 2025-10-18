@@ -1,37 +1,29 @@
 import { useEffect } from 'react';
-import { LogoutButton, requireAuth, useAuthContext, type User } from '@/features/auth';
+import { LogoutButton, requireAuth, type User } from '@/features/auth';
 import { GetServerSideProps } from 'next';
+import { queryClient } from '@/lib/queryClient';
 
 interface DashboardProps {
-  user: User;
+  initialUser: User;
 }
 
-const Dashboard = ({ user }: DashboardProps) => {
-  const { setUser } = useAuthContext();
-
-  // Sync server-side user data to context on mount
+/**
+ * Dashboard page - server-rendered, no Suspense needed
+ * Cache pre-populated for instant future navigations
+ */
+const Dashboard = ({ initialUser }: DashboardProps) => {
+  // Pre-populate React Query cache with server data for future navigations
   useEffect(() => {
-    if (user) {
-      setUser(user);
-    }
-  }, [user, setUser]);
-
-  // Safety check - should never happen with requireAuth, but just in case
-  if (!user || !user.email) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div>Loading...</div>
-      </div>
-    );
-  }
+    queryClient.setQueryData(['auth', 'session'], initialUser);
+  }, [initialUser]);
 
   return (
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
       <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
         <div className="flex flex-col gap-4">
           <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p>Welcome, {user.firstName || user.email.split('@')[0]}!</p>
-          <p className="text-sm text-gray-600">{user.email}</p>
+          <p>Welcome, {initialUser.firstName || initialUser.email.split('@')[0]}!</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">{initialUser.email}</p>
           <LogoutButton />
         </div>
       </main>
@@ -39,9 +31,20 @@ const Dashboard = ({ user }: DashboardProps) => {
   );
 };
 
-// ✨ Server-side auth validation - no loading state, instant redirect
+// ✨ Server-side auth validation - instant redirect if not logged in
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  return requireAuth(context);
+  const result = await requireAuth(context);
+  
+  // Pass user as initialUser for Suspense
+  if ('props' in result && result.props) {
+    return {
+      props: {
+        initialUser: result.props.user,
+      },
+    };
+  }
+  
+  return result;
 };
 
 export default Dashboard;

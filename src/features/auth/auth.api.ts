@@ -1,0 +1,47 @@
+import { api } from '@/api/api.client';
+
+export interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+}
+
+export interface LoginResponse {
+  user: User;
+  tokens: {
+    accessToken: string;
+    refreshToken: string;
+  };
+}
+
+/**
+ * Logs in with Google OAuth code
+ * Shows error notifications on failure via API client
+ */
+export const loginGoogle = async (code: string): Promise<LoginResponse | null> => {
+  const response = await api.post<LoginResponse>('/auth/login/google', { code });
+  return response.data || null;
+};
+
+/**
+ * Logs out current user
+ * Shows error notifications on failure via API client
+ */
+export const logout = async (): Promise<{ message: string } | null> => {
+  const response = await api.post<{ message: string }>('/auth/logout');
+  return response.data || null;
+};
+
+/**
+ * Validates current session (SILENT - no error notifications)
+ * Used for auth checks where failure is expected (not logged in)
+ * Returns user data if valid, null if not
+ */
+export const validate = async (): Promise<User | null> => {
+  // Use silent option to prevent notification spam on every page load
+  const response = await api.get<{ user: User }>('/users/me', { silent: true });
+  // Backend returns { user: {...} }, unwrap it
+  return response.data?.user || null;
+};
+
