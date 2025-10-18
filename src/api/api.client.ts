@@ -1,5 +1,10 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
-import { ApiError } from '@/types/error.types';
+
+export interface ApiError {
+  message: string;
+  statusCode: number;
+  error?: string;
+}
 
 interface ApiResponse<T> {
   data?: T;
@@ -50,30 +55,30 @@ export class ApiClient {
   }
 
   // API methods
-  async get<T>(url: string): Promise<ApiResponse<T>> {
+  async get<T>(url: string, options?: { silent?: boolean }): Promise<ApiResponse<T>> {
     try {
       const response = await this.client.get<T>(url);
       return { data: response.data };
     } catch (error) {
-      return this.handleError(error);
+      return this.handleError(error, options?.silent);
     }
   }
 
-  async post<T>(url: string, data?: unknown): Promise<ApiResponse<T>> {
+  async post<T>(url: string, data?: unknown, options?: { silent?: boolean }): Promise<ApiResponse<T>> {
     try {
       const response = await this.client.post<T>(url, data);
       return { data: response.data };
     } catch (error) {
-      return this.handleError(error);
+      return this.handleError(error, options?.silent);
     }
   }
 
-  private handleError(error: unknown): ApiResponse<never> {
+  private handleError(error: unknown, silent = false): ApiResponse<never> {
     if (axios.isAxiosError(error)) {
       const axiosError = error as AxiosError<ApiError>;
       
-      // Use error handler if available to show notifications
-      if (this.errorHandler) {
+      // Use error handler if available to show notifications (unless silent)
+      if (!silent && this.errorHandler) {
         this.errorHandler(axiosError);
       }
       
@@ -85,8 +90,8 @@ export class ApiClient {
       return { error: errorMessage };
     }
     
-    // Use error handler if available
-    if (this.errorHandler) {
+    // Use error handler if available (unless silent)
+    if (!silent && this.errorHandler) {
       this.errorHandler(error);
     }
     
@@ -97,3 +102,4 @@ export class ApiClient {
 }
 
 export const api = new ApiClient();
+

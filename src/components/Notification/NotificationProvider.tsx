@@ -1,5 +1,5 @@
 import React, { createContext, useState, useCallback, ReactNode } from 'react';
-import { Notification, NotificationAction } from '@/types/notification.types';
+import { Notification, NotificationAction } from './notification.types';
 
 interface NotificationContextType {
   notifications: Notification[];
@@ -108,3 +108,4 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     </NotificationContext.Provider>
   );
 };
+

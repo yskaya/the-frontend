@@ -10,13 +10,16 @@ export const NotificationStack: React.FC = () => {
   }
 
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm">
-      {notifications.map((notification) => (
-        <NotificationItem
-          key={notification.id}
-          notification={notification}
-        />
-      ))}
+    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl px-4">
+      <div className="space-y-3">
+        {notifications.map((notification) => (
+          <NotificationItem
+            key={notification.id}
+            notification={notification}
+          />
+        ))}
+      </div>
     </div>
   );
 };
+

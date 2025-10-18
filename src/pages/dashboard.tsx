@@ -1,14 +1,6 @@
 import { useEffect } from 'react';
-import { LogoutButton } from '@/components/LogoutButton';
-import { requireAuth } from '@/lib/serverAuth';
-import { useAuthContext } from '@/context/Auth/AuthProvider';
+import { LogoutButton, requireAuth, useAuthContext, type User } from '@/features/auth';
 import { GetServerSideProps } from 'next';
-
-interface User {
-  email: string;
-  firstName: string;
-  lastName: string;
-}
 
 interface DashboardProps {
   user: User;
