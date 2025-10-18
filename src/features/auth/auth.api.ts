@@ -1,4 +1,4 @@
-import { api } from '@/api/api.client';
+import { api } from '@/lib';
 
 export interface User {
   id: string;

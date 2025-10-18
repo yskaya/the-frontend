@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { LogoutButton, requireAuth, type User } from '@/features/auth';
 import { GetServerSideProps } from 'next';
-import { queryClient } from '@/lib/queryClient';
+import { queryClient } from '@/lib';
 
 interface DashboardProps {
   initialUser: User;

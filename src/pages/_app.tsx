@@ -6,8 +6,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { AuthProvider } from '@/features/auth';
 import { NotificationProvider, NotificationStack } from '@/components/Notification';
 import { ErrorBoundary, useErrorHandling, useErrorSuppressor } from '@/features/errors';
-import { api } from '@/api/api.client';
-import { queryClient } from '@/lib/queryClient';
+import { queryClient, api } from '@/lib';
 
 import '../globals.css';
 
