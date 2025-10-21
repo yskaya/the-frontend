@@ -74,9 +74,17 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
         </div>
       </header>
 
-      {/* Fixed Menu Button - Always on top, within container */}
+      {/* Fixed Menu Buttons - Always on top, within container */}
       <div className="fixed top-4 left-0 right-0 z-[100] pointer-events-none">
-        <div className="max-w-4xl mx-auto px-6 flex justify-end pointer-events-auto">
+        <div className="max-w-4xl mx-auto px-6 flex justify-end gap-3 pointer-events-auto">
+          {/* Exit */}
+          <LogoutButton 
+            className="h-9 px-3 rounded-full border gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 border-red-500/30 hover:border-red-500 transition-all flex items-center"
+          >
+            <LogOut className="h-4 w-4" />
+            <span className="hidden sm:inline text-sm">Exit</span>
+          </LogoutButton>
+          
           {/* Contacts */}
           <Sheet open={contactsOpen} onOpenChange={setContactsOpen}>
             <SheetTrigger asChild>
@@ -244,24 +252,13 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
       {/* Footer */}
       <footer className="border-t border-white/10 bg-gradient-to-t from-zinc-900/50 to-black/50 backdrop-blur-xl mt-16">
         <div className="max-w-4xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            {/* Links */}
-            <div className="flex items-center gap-6">
-              <button className="text-sm text-gray-400 hover:text-white transition-colors">
-                Terms
-              </button>
-              <button className="text-sm text-gray-400 hover:text-white transition-colors">
-                Contact
-              </button>
-            </div>
-            
-            {/* Exit Button */}
-            <LogoutButton 
-              className="h-9 px-4 gap-2 text-red-500 hover:text-red-400 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/30 rounded-lg transition-all flex items-center"
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="text-sm font-medium">Exit</span>
-            </LogoutButton>
+          <div className="flex items-center justify-center gap-6">
+            <button className="text-sm text-gray-400 hover:text-white transition-colors">
+              Terms
+            </button>
+            <button className="text-sm text-gray-400 hover:text-white transition-colors">
+              Contact
+            </button>
           </div>
         </div>
       </footer>
