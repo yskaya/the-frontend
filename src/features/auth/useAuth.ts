@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { loginGoogle, logout, validate, type User, type LoginResponse } from './auth.api';
+import { loginGoogle, logout, validate, type LoginResponse } from './auth.api';
+import { User } from './auth.types';
 
 /**
  * Validates current session (silent - no error notifications)
@@ -12,8 +13,6 @@ export const useValidateSession = () => {
     queryFn: validate,
     // Don't show error notifications for auth checks
     meta: { silent: true },
-    // Disable Suspense - we use server-side rendering
-    suspense: false,
     // Refetch on window focus to keep session fresh
     refetchOnWindowFocus: true,
     // Don't retry failed auth checks (401 is expected)

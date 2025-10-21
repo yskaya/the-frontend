@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
-import { useLogin } from '../useAuth';
-import { useAuthContext } from '../AuthProvider';
+import { useLogin } from '@/features/auth/useAuth';
+import { useAuthContext } from '@/features/auth/AuthProvider';
 import { LoginGoogleButtonSkeleton } from './LoginGoogleButtonSkeleton';
 
 interface LoginGoogleButtonProps {
@@ -36,7 +36,7 @@ export const LoginGoogleButton: React.FC<LoginGoogleButtonProps> = ({
           // Login failed but didn't throw - error notification shown by api.client
           setIsRedirecting(false);
         }
-      } catch (err) {
+      } catch {
         // Error notification already shown by api.client
         // Don't rethrow - just stay on login page
         console.log('Login caught error - notification should be visible');

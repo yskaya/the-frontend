@@ -39,7 +39,12 @@ export class ApiClient {
     // Request interceptor
     this.client.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
-        // You can modify headers here if needed
+        // Add user ID header for backend microservices
+        // Get from cookies if available (set during login)
+        const cookies = document.cookie;
+        const userIdMatch = cookies.match(/user_id=([^;]+)/);
+        const userId = userIdMatch ? userIdMatch[1] : 'test-user-1'; // Fallback for testing
+        config.headers['x-user-id'] = userId;
         return config;
       },
       (error: AxiosError) => {
@@ -67,6 +72,24 @@ export class ApiClient {
   async post<T>(url: string, data?: unknown, options?: { silent?: boolean }): Promise<ApiResponse<T>> {
     try {
       const response = await this.client.post<T>(url, data);
+      return { data: response.data };
+    } catch (error) {
+      return this.handleError(error, options?.silent);
+    }
+  }
+
+  async patch<T>(url: string, data?: unknown, options?: { silent?: boolean }): Promise<ApiResponse<T>> {
+    try {
+      const response = await this.client.patch<T>(url, data);
+      return { data: response.data };
+    } catch (error) {
+      return this.handleError(error, options?.silent);
+    }
+  }
+
+  async delete<T>(url: string, options?: { silent?: boolean }): Promise<ApiResponse<T>> {
+    try {
+      const response = await this.client.delete<T>(url);
       return { data: response.data };
     } catch (error) {
       return this.handleError(error, options?.silent);

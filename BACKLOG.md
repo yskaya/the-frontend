@@ -440,7 +440,27 @@ const shouldShowError = (errorKey: string) => {
 
 ## 🔮 **Future Enhancements**
 
-### **28. Migrate to App Router** [Architecture]
+### **28. Contacts Drag & Drop** [UX]
+
+**Priority:** P3  
+**Effort:** 2 days  
+**Status:** Future
+
+- [ ] Drag contacts between groups
+- [ ] Drag to reorder contacts within groups
+- [ ] Visual feedback during drag
+- [ ] Drop zones highlight on hover
+- [ ] Undo/redo for drag operations
+- [ ] Touch support for mobile
+
+**Implementation:**
+- Use `@dnd-kit/core` or `react-beautiful-dnd`
+- Integrate with React Query mutations
+- Optimistic UI updates during drag
+
+---
+
+### **29. Migrate to App Router** [Architecture]
 
 **Priority:** P3  
 **Effort:** 2 weeks  
@@ -568,6 +588,9 @@ const shouldShowError = (errorKey: string) => {
 - ✅ Type organization and cleanup
 - ✅ Error suppression for dev overlay
 - ✅ Consolidated documentation
+- ✅ Complete contacts feature with groups (CRUD operations)
+- ✅ FigmaFiles UI components integration
+- ✅ Dark theme dashboard with balance widget
 
 ---
 

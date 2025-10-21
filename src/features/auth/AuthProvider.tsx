@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { validate, User } from './auth.api';
+import { validate } from './auth.api';
+import { User } from './auth.types';
 
 interface AuthContextType {
   user: User | null;

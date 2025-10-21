@@ -1,17 +1,14 @@
-// Components
-export * from './LoginGoogleButton';
-export * from './LogoutButton';
+// Shared Types
+export type { User } from './auth.types';
 
-// Providers (unified - includes Google OAuth)
-export { AuthProvider, useAuthContext } from './AuthProvider';
+// API (includes request/response types)
+export * from './auth.api';
 
-// Hooks (React Query)
+// React Query Hooks
 export * from './useAuth';
 
-// Server utilities
+// Server-side utilities
 export * from './serverAuth';
 
-// API & Types
-export * from './auth.api';
-export type { User, LoginResponse } from './auth.api';
-
+// Context Provider
+export { AuthProvider, useAuthContext } from './AuthProvider';

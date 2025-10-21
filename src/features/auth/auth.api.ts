@@ -1,12 +1,9 @@
 import { api } from '@/lib';
+import { User } from './auth.types';
 
-export interface User {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-}
-
+/**
+ * Request/Response types (API-specific)
+ */
 export interface LoginResponse {
   user: User;
   tokens: {
@@ -44,4 +41,3 @@ export const validate = async (): Promise<User | null> => {
   // Backend returns { user: {...} }, unwrap it
   return response.data?.user || null;
 };
-

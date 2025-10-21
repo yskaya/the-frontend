@@ -1,11 +1,11 @@
 import dynamic from 'next/dynamic';
 import { GetServerSideProps } from 'next';
 import { redirectIfAuthenticated } from '@/features/auth';
-import { LoginGoogleButtonSkeleton } from '@/features/auth/LoginGoogleButton/LoginGoogleButtonSkeleton';
+import { LoginGoogleButtonSkeleton } from '@/components/LoginGoogleButton/LoginGoogleButtonSkeleton';
 
 // ✨ LoginGoogleButton needs GoogleOAuthProvider, so we load it client-side only
 const LoginGoogleButton = dynamic(
-  () => import('@/features/auth/LoginGoogleButton').then(mod => ({ default: mod.LoginGoogleButton })),
+  () => import('@/components/LoginGoogleButton').then(mod => ({ default: mod.LoginGoogleButton })),
   { 
     ssr: false, 
     loading: () => <LoginGoogleButtonSkeleton />
