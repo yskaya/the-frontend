@@ -22,23 +22,34 @@ export const LoginGoogleButton: React.FC<LoginGoogleButtonProps> = ({
     onSuccess: async (codeResponse) => {
       try {
         // Use React Query mutation
+        console.log('[LoginGoogleButton] Google OAuth success, code received');
+        console.log('[LoginGoogleButton] Calling loginMutation.mutateAsync...');
         const data = await loginMutation.mutateAsync(codeResponse.code);
+        console.log('[LoginGoogleButton] Login mutation completed, data:', data);
+        console.log('[LoginGoogleButton] Cookies after mutation:', document.cookie);
         
         if (data && data.user) {
+          console.log('[LoginGoogleButton] Login successful, user:', data.user);
           setUser(data.user);
           
           // Set redirecting state to prevent error flash
           setIsRedirecting(true);
           
+          console.log('[LoginGoogleButton] Redirecting to /dashboard...');
           // Redirect immediately (cookies are set by backend response)
           window.location.href = '/dashboard';
         } else if (!data) {
           // Login failed but didn't throw - error notification shown by api.client
+          console.log('[LoginGoogleButton] Login failed - no data returned');
+          setIsRedirecting(false);
+        } else {
+          console.log('[LoginGoogleButton] Login failed - data exists but no user:', data);
           setIsRedirecting(false);
         }
-      } catch {
+      } catch (error) {
         // Error notification already shown by api.client
         // Don't rethrow - just stay on login page
+        console.error('[LoginGoogleButton] Login caught error:', error);
         console.log('Login caught error - notification should be visible');
         setIsRedirecting(false);
       }

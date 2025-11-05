@@ -17,7 +17,12 @@ export interface LoginResponse {
  * Shows error notifications on failure via API client
  */
 export const loginGoogle = async (code: string): Promise<LoginResponse | null> => {
+  console.log('[loginGoogle] Starting login with code:', code.substring(0, 20) + '...');
   const response = await api.post<LoginResponse>('/auth/login/google', { code });
+  console.log('[loginGoogle] API response:', response);
+  console.log('[loginGoogle] Response data:', response.data);
+  console.log('[loginGoogle] Response error:', response.error);
+  console.log('[loginGoogle] Cookies after login:', document.cookie);
   return response.data || null;
 };
 
