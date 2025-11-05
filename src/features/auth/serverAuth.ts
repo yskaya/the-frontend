@@ -28,8 +28,14 @@ export async function validateServerAuth(
     console.log('[Server Auth] ✅ accessToken found, validating...');
 
     // Call your auth API to validate
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5555';
-    const response = await fetch(`${apiUrl}/users/me`, {
+    // Gateway has /api prefix, so we add it here
+    let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5555';
+    // Remove trailing slash if present
+    apiUrl = apiUrl.replace(/\/$/, '');
+    // Add /api only if not already present
+    const baseUrl = apiUrl.endsWith('/api') ? apiUrl : `${apiUrl}/api`;
+    const fullUrl = `${baseUrl}/users/me`;
+    const response = await fetch(fullUrl, {
       headers: {
         Cookie: cookies,
       },

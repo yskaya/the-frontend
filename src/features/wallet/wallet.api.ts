@@ -1,7 +1,15 @@
 import { Wallet, Transaction } from './wallet.types';
 
-// Use environment variable with fallback
-const WALLET_API_BASE = process.env.NEXT_PUBLIC_WALLET_API_URL || 'http://localhost:5006/api';
+// Use gateway URL - gateway already has /api prefix
+// For direct fetch calls, use gateway URL with /api prefix (if not already present)
+const getApiBase = () => {
+  let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5555';
+  // Remove trailing slash if present
+  apiUrl = apiUrl.replace(/\/$/, '');
+  // Add /api only if not already present
+  return apiUrl.endsWith('/api') ? apiUrl : `${apiUrl}/api`;
+};
+const WALLET_API_BASE = getApiBase();
 
 // Helper to get user ID from cookie
 const getUserId = (): string => {
@@ -48,12 +56,13 @@ export const createWallet = async (userId?: string): Promise<CreateWalletRespons
   const userIdToUse = userId || getUserId();
   console.log('[createWallet] Using user ID:', userIdToUse);
   
-  const response = await fetch(`${WALLET_API_BASE}/wallet`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-user-id': userIdToUse,
-    },
+    const response = await fetch(`${WALLET_API_BASE}/wallet`, {
+      method: 'POST',
+      credentials: 'include', // Include cookies for authentication
+      headers: {
+        'Content-Type': 'application/json',
+        'x-user-id': userIdToUse,
+      },
   });
 
   if (!response.ok) {
@@ -74,6 +83,7 @@ export const getWallet = async (userId?: string): Promise<Wallet | null> => {
     
     const response = await fetch(`${WALLET_API_BASE}/wallet`, {
       method: 'GET',
+      credentials: 'include', // Include cookies for authentication
       headers: {
         'Content-Type': 'application/json',
         'x-user-id': userIdToUse,
@@ -121,6 +131,7 @@ export const getWalletWithTransactions = async (
     
     const response = await fetch(`${WALLET_API_BASE}/wallet/with-transactions?limit=${limit}`, {
       method: 'GET',
+      credentials: 'include', // Include cookies for authentication
       headers: {
         'Content-Type': 'application/json',
         'x-user-id': userIdToUse,
@@ -199,6 +210,7 @@ export const getTransactions = async (): Promise<Transaction[]> => {
     
     const response = await fetch(`${WALLET_API_BASE}/wallet/transactions`, {
       method: 'GET',
+      credentials: 'include', // Include cookies for authentication
       headers: {
         'Content-Type': 'application/json',
         'x-user-id': userId,
@@ -263,6 +275,7 @@ export const syncTransactions = async (userId?: string): Promise<{ message: stri
   
   const response = await fetch(`${WALLET_API_BASE}/wallet/sync-incoming`, {
     method: 'POST',
+    credentials: 'include', // Include cookies for authentication
     headers: {
       'Content-Type': 'application/json',
       'x-user-id': userIdToUse,
@@ -282,6 +295,7 @@ export const syncTransactions = async (userId?: string): Promise<{ message: stri
 export const sendCrypto = async (request: SendTransactionRequest): Promise<SendTransactionResponse> => {
   const response = await fetch(`${WALLET_API_BASE}/wallet/send`, {
     method: 'POST',
+    credentials: 'include', // Include cookies for authentication
     headers: {
       'Content-Type': 'application/json',
       'x-user-id': getUserId(),

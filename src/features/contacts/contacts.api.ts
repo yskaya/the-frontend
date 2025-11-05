@@ -1,8 +1,9 @@
 import { api } from '@/lib';
 import { Contact } from './contacts.types';
 
-// Use environment variable with fallback
-const CONTACTS_API_BASE = process.env.NEXT_PUBLIC_CONTACTS_API_URL || 'http://localhost:5005/api';
+// Use gateway URL - API client already has baseURL with /api prefix
+// Paths should NOT include /api since it's already in baseURL
+const CONTACTS_API_BASE = '';
 
 /**
  * Request/Response types (API-specific)

@@ -17,8 +17,17 @@ export class ApiClient {
   private errorHandler?: (error: unknown, context?: string) => void;
 
   constructor() {
+    // Get base URL and add /api prefix only if not already present
+    // Handle both with and without trailing slash
+    let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5555';
+    // Remove trailing slash if present
+    apiUrl = apiUrl.replace(/\/$/, '');
+    
+    // Add /api only if not already present
+    const baseURL = apiUrl.endsWith('/api') ? apiUrl : `${apiUrl}/api`;
+    
     this.client = axios.create({
-      baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5555',
+      baseURL,
       withCredentials: true, // Important for cookies
       timeout: 10000,
       headers: {
