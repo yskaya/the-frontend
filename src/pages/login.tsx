@@ -2,6 +2,8 @@ import dynamic from 'next/dynamic';
 import { GetServerSideProps } from 'next';
 import { redirectIfAuthenticated } from '@/features/auth';
 import { LoginGoogleButtonSkeleton } from '@/components/LoginGoogleButton/LoginGoogleButtonSkeleton';
+import Link from 'next/link';
+import '../components.css';
 
 // ✨ LoginGoogleButton needs GoogleOAuthProvider, so we load it client-side only
 const LoginGoogleButton = dynamic(
@@ -16,14 +18,39 @@ export default function LoginPage() {
   // ✨ If this page renders, user is NOT authenticated (verified server-side)
   
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start max-w-4xl">
-        <div className="flex flex-col gap-4 items-center">
-          <h1 className="text-3xl font-bold">Welcome to PayPay</h1>
-          <p className="text-gray-600">Sign in to continue</p>
+    <div className="dark min-h-screen bg-black flex flex-col items-center justify-center p-8">
+      {/* Top Section - Welcome and Logo */}
+      <div className="flex flex-col items-center mb-16">
+        <p className="welcome-text">
+          Welcome to
+        </p>
+        <div className="paypay-logo-container">
+          <span className="text-white">pay</span>
+          <span className="paypay-logo-purple">pay</span>
+        </div>
+      </div>
+
+      {/* Center Card */}
+      <div className="signin-box mb-8">
+        <h2 className="signin-heading">
+          Sign in to your account
+        </h2>
+        <div className="flex justify-center">
           <LoginGoogleButton />
         </div>
-      </main>
+      </div>
+
+      {/* Bottom Terms */}
+      <p className="terms-text">
+        By continuing to log in, you agree to the{' '}
+        <Link href="/terms" className="font-bold hover:underline">
+          terms of use
+        </Link>
+        {' '}and{' '}
+        <Link href="/policy" className="font-bold hover:underline">
+          policy
+        </Link>
+      </p>
     </div>
   );
 }

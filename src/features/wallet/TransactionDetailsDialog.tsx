@@ -3,6 +3,7 @@ import { Button } from "@/ui/button";
 import { Badge } from "@/ui/badge";
 import { Separator } from "@/ui/separator";
 import { toast } from "sonner";
+import { formatRelativeDate } from "@/lib/utils";
 
 interface Transaction {
   id: string;
@@ -67,13 +68,7 @@ export function TransactionDetailsDialog({ transaction }: TransactionDetailsDial
               {transaction.type === "send" ? "Sent" : "Received"}
             </h3>
             <div className="text-sm text-gray-500">
-              {new Date(transaction.timestamp).toLocaleString('en-US', { 
-                month: 'short', 
-                day: 'numeric', 
-                hour: 'numeric', 
-                minute: '2-digit',
-                hour12: true 
-              })}
+              {formatRelativeDate(transaction.timestamp)}
             </div>
           </div>
         </div>

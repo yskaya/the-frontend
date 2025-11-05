@@ -87,9 +87,9 @@ export class ApiClient {
     }
   }
 
-  async delete<T>(url: string, options?: { silent?: boolean }): Promise<ApiResponse<T>> {
+  async delete<T>(url: string, data?: unknown, options?: { silent?: boolean }): Promise<ApiResponse<T>> {
     try {
-      const response = await this.client.delete<T>(url);
+      const response = await this.client.delete<T>(url, { data });
       return { data: response.data };
     } catch (error) {
       return this.handleError(error, options?.silent);
@@ -99,6 +99,19 @@ export class ApiClient {
   private handleError(error: unknown, silent = false): ApiResponse<never> {
     if (axios.isAxiosError(error)) {
       const axiosError = error as AxiosError<ApiError>;
+      
+      // Check for rate limit errors (429)
+      if (axiosError.response?.status === 429) {
+        const apiError = axiosError.response?.data;
+        const errorMessage = apiError?.message || 'Rate limit exceeded. Please wait a moment and try again.';
+        
+        // Use error handler if available to show notifications (unless silent)
+        if (!silent && this.errorHandler) {
+          this.errorHandler(axiosError);
+        }
+        
+        return { error: errorMessage };
+      }
       
       // Use error handler if available to show notifications (unless silent)
       if (!silent && this.errorHandler) {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useCreateScheduledPayment } from '../hooks';
+import { useCreatePayroll } from '../hooks';
 import type { ScheduledPaymentFormData } from '../types';
 import { Button } from '@/ui/button';
 import { Input } from '@/ui/input';
@@ -22,7 +22,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/ui/select';
-import { CalendarClock } from 'lucide-react';
+import { Checkbox } from '@/ui/checkbox';
+import { CalendarClock, X } from 'lucide-react';
+import { ScrollArea } from '@/ui/scroll-area';
 
 // Import contacts API
 import { useContacts } from '@/features/contacts';
@@ -39,7 +41,7 @@ export function PayrollDialog({
   buttonText = "Payroll"
 }: PayrollDialogProps) {
   const [open, setOpen] = useState(false);
-  const createMutation = useCreateScheduledPayment();
+  const createMutation = useCreatePayroll();
   const { data: contacts, isLoading: contactsLoading } = useContacts();
 
   const [formData, setFormData] = useState<ScheduledPaymentFormData>({
@@ -50,20 +52,52 @@ export function PayrollDialog({
     scheduledTime: '',
     note: '',
   });
+  const [payrollName, setPayrollName] = useState('');
+  const [selectedContactIds, setSelectedContactIds] = useState<string[]>([]);
+  const [recipientAmounts, setRecipientAmounts] = useState<Record<string, string>>({}); // contactId -> amount
+  const [showContactSelect, setShowContactSelect] = useState(false);
 
-  const handleContactSelect = (contactId: string) => {
-    const contact = contacts?.find(c => c.id === contactId);
-    if (contact) {
-      setFormData(prev => ({
-        ...prev,
-        recipientAddress: contact.address,
-        recipientName: contact.name,
-      }));
-    }
+  // Removed handleContactToggle - using inline handlers to prevent infinite loops
+
+  const handleRemoveContact = (contactId: string) => {
+    setSelectedContactIds(prev => prev.filter(id => id !== contactId));
+    setRecipientAmounts(prev => {
+      const updated = { ...prev };
+      delete updated[contactId];
+      return updated;
+    });
   };
+
+  const handleAmountChange = (contactId: string, amount: string) => {
+    setRecipientAmounts(prev => ({
+      ...prev,
+      [contactId]: amount,
+    }));
+  };
+
+  const selectedContacts = contacts?.filter(c => selectedContactIds.includes(c.id)) || [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate at least one contact selected
+    if (selectedContactIds.length === 0) {
+      alert('Please select at least one contact');
+      return;
+    }
+
+    // Validate payroll name
+    if (!payrollName.trim()) {
+      alert('Please enter a payroll name');
+      return;
+    }
+
+    // Validate all recipients have amounts
+    const missingAmounts = selectedContactIds.filter(id => !recipientAmounts[id] || parseFloat(recipientAmounts[id]) <= 0);
+    if (missingAmounts.length > 0) {
+      alert('Please enter an amount for all selected recipients');
+      return;
+    }
 
     // Combine date and time into ISO string
     const scheduledFor = new Date(`${formData.scheduledDate}T${formData.scheduledTime}`);
@@ -77,12 +111,16 @@ export function PayrollDialog({
       return;
     }
 
+    // Create payroll with recipients (will be handled by backend API)
     await createMutation.mutateAsync({
-      recipientAddress: formData.recipientAddress,
-      recipientName: formData.recipientName || undefined,
-      amount: formData.amount,
+      name: payrollName,
       scheduledFor: scheduledFor.toISOString(),
       note: formData.note || undefined,
+      recipients: selectedContacts.map(contact => ({
+        recipientAddress: contact.address,
+        recipientName: contact.name || undefined,
+        amount: recipientAmounts[contact.id],
+      })),
     });
 
     // Reset form and close dialog
@@ -94,6 +132,10 @@ export function PayrollDialog({
       scheduledTime: '',
       note: '',
     });
+    setPayrollName('');
+    setSelectedContactIds([]);
+    setRecipientAmounts({});
+    setShowContactSelect(false);
     setOpen(false);
     onSuccess?.();
   };
@@ -121,60 +163,136 @@ export function PayrollDialog({
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-          {/* Contact Selector */}
+          {/* Payroll Name */}
           <div className="space-y-2">
-            <Label htmlFor="contact">
-              Select Contact <span className="text-red-500">*</span>
+            <Label htmlFor="payrollName">
+              Payroll Name <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="payrollName"
+              type="text"
+              placeholder="October 2025 Payroll"
+              value={payrollName}
+              onChange={(e) => setPayrollName(e.target.value)}
+              required
+            />
+          </div>
+
+          {/* Contact Multi-Selector */}
+          <div className="space-y-2">
+            <Label>
+              Select Contacts <span className="text-red-500">*</span>
             </Label>
             {contactsLoading ? (
               <div className="text-sm text-muted-foreground">Loading contacts...</div>
             ) : contacts && contacts.length > 0 ? (
-              <Select onValueChange={handleContactSelect} required>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a contact" />
-                </SelectTrigger>
-                <SelectContent>
-                  {contacts.map((contact) => (
-                    <SelectItem key={contact.id} value={contact.id}>
-                      {contact.name} ({contact.address.slice(0, 6)}...{contact.address.slice(-4)})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="space-y-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowContactSelect(!showContactSelect)}
+                  className="w-full justify-between"
+                >
+                  <span>
+                    {selectedContactIds.length === 0
+                      ? 'Choose contacts'
+                      : `${selectedContactIds.length} contact${selectedContactIds.length > 1 ? 's' : ''} selected`}
+                  </span>
+                  <span className="text-xs text-muted-foreground">▼</span>
+                </Button>
+                
+                {showContactSelect && (
+                  <div className="border rounded-md bg-white p-2 max-h-[200px] overflow-y-auto">
+                    <ScrollArea className="h-full">
+                      {contacts.map((contact) => (
+                        <div
+                          key={contact.id}
+                          className="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded"
+                        >
+                          <Checkbox
+                            checked={selectedContactIds.includes(contact.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedContactIds(prev => [...prev, contact.id]);
+                              } else {
+                                setSelectedContactIds(prev => prev.filter(id => id !== contact.id));
+                              }
+                            }}
+                          />
+                          <div 
+                            className="flex-1 cursor-pointer"
+                            onClick={() => {
+                              const isSelected = selectedContactIds.includes(contact.id);
+                              if (isSelected) {
+                                setSelectedContactIds(prev => prev.filter(id => id !== contact.id));
+                              } else {
+                                setSelectedContactIds(prev => [...prev, contact.id]);
+                              }
+                            }}
+                          >
+                            <p className="text-sm font-medium">{contact.name}</p>
+                            <p className="text-xs text-muted-foreground font-mono">
+                              {contact.address.slice(0, 10)}...{contact.address.slice(-8)}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </ScrollArea>
+                  </div>
+                )}
+
+                {/* Show selected contacts with amount inputs */}
+                {selectedContacts.length > 0 && (
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">Set Amounts per Recipient</Label>
+                    {selectedContacts.map((contact) => (
+                      <div
+                        key={contact.id}
+                        className="p-3 bg-muted rounded-md space-y-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{contact.name}</p>
+                            <p className="text-xs text-muted-foreground font-mono break-all">
+                              {contact.address}
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveContact(contact.id)}
+                            className="h-6 w-6 p-0"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor={`amount-${contact.id}`} className="text-xs whitespace-nowrap">
+                            Amount (ETH):
+                          </Label>
+                          <Input
+                            id={`amount-${contact.id}`}
+                            type="number"
+                            step="0.000001"
+                            min="0.000001"
+                            placeholder="0.01"
+                            value={recipientAmounts[contact.id] || ''}
+                            onChange={(e) => handleAmountChange(contact.id, e.target.value)}
+                            className="flex-1"
+                            required
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="text-sm text-muted-foreground">
                 No contacts found. Add contacts first.
               </div>
             )}
-          </div>
-
-          {/* Show selected contact details */}
-          {formData.recipientAddress && (
-            <div className="p-3 bg-muted rounded-md">
-              <div className="text-sm">
-                <p className="font-medium">{formData.recipientName}</p>
-                <p className="text-xs text-muted-foreground font-mono break-all">
-                  {formData.recipientAddress}
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Amount */}
-          <div className="space-y-2">
-            <Label htmlFor="amount">
-              Amount (ETH) <span className="text-red-500">*</span>
-            </Label>
-            <Input
-              id="amount"
-              type="number"
-              step="0.000001"
-              min="0.000001"
-              placeholder="0.01"
-              value={formData.amount}
-              onChange={(e) => updateField('amount', e.target.value)}
-              required
-            />
           </div>
 
           {/* Scheduled Date */}
@@ -236,9 +354,14 @@ export function PayrollDialog({
             <Button
               type="submit"
               className="flex-1"
-              disabled={createMutation.isPending || !formData.recipientAddress}
+              disabled={
+                createMutation.isPending || 
+                selectedContactIds.length === 0 || 
+                !payrollName.trim() ||
+                selectedContactIds.some(id => !recipientAmounts[id] || parseFloat(recipientAmounts[id]) <= 0)
+              }
             >
-              {createMutation.isPending ? 'Scheduling...' : 'Schedule Payment'}
+              {createMutation.isPending ? 'Creating Payroll...' : `Create Payroll (${selectedContactIds.length} recipient${selectedContactIds.length > 1 ? 's' : ''})`}
             </Button>
           </div>
         </form>

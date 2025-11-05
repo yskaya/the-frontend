@@ -109,6 +109,87 @@ export const getWallet = async (userId?: string): Promise<Wallet | null> => {
 };
 
 /**
+ * Get wallet with balance and transactions in one call (optimized for polling)
+ */
+export const getWalletWithTransactions = async (
+  userId?: string,
+  limit: number = 50
+): Promise<{ wallet: Wallet | null; transactions: Transaction[] }> => {
+  try {
+    const userIdToUse = userId || getUserId();
+    console.log('[getWalletWithTransactions] Using user ID:', userIdToUse);
+    
+    const response = await fetch(`${WALLET_API_BASE}/wallet/with-transactions?limit=${limit}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-user-id': userIdToUse,
+      },
+    });
+
+    if (!response.ok) {
+      return { wallet: null, transactions: [] };
+    }
+
+    const data = await response.json();
+    
+    // If wallet doesn't exist, return null
+    if (!data.wallet || data.wallet === null) {
+      return { wallet: null, transactions: [] };
+    }
+
+    // Map backend wallet response to frontend Wallet type
+    const wallet: Wallet = {
+      id: data.wallet.id,
+      userId: data.wallet.userId,
+      address: data.wallet.address,
+      balance: data.wallet.balance,
+      balanceUSD: '0', // TODO: Calculate from balance
+      currency: 'ETH',
+      network: data.wallet.network || 'sepolia',
+      createdAt: data.wallet.createdAt,
+    };
+
+    // Map backend transactions to frontend Transaction type
+    const ETH_PRICE = 3243.0; // ETH to USD conversion rate
+    const transactions: Transaction[] = (data.transactions || []).map((tx: any) => {
+      const amount = parseFloat(tx.amount || '0');
+      const usdValue = (amount * ETH_PRICE).toFixed(2);
+      
+      return {
+        id: tx.id,
+        walletId: tx.walletId,
+        type: tx.type,
+        amount: tx.amount,
+        currency: 'ETH',
+        address: tx.type === 'send' ? tx.to : tx.from,
+        timestamp: tx.createdAt,
+        status: tx.status,
+        usdValue: usdValue,
+        hash: tx.txHash,
+        fee: tx.gasUsed || '0',
+        gasPrice: tx.gasPrice || '0',
+        blockNumber: tx.blockNumber?.toString() || '0',
+        confirmations: tx.status === 'completed' ? 1 : 0,
+        fullDate: new Date(tx.createdAt).toLocaleString(),
+        nonce: tx.nonce?.toString() || '',
+        labels: [],
+        // Scheduled payment fields
+        isScheduled: tx.isScheduled || false,
+        scheduledFor: tx.scheduledFor,
+        recipientName: tx.recipientName,
+        note: tx.note,
+      };
+    });
+
+    return { wallet, transactions };
+  } catch (error) {
+    console.error('Error fetching wallet with transactions:', error);
+    return { wallet: null, transactions: [] };
+  }
+};
+
+/**
  * Get wallet transactions
  */
 export const getTransactions = async (): Promise<Transaction[]> => {
@@ -135,30 +216,36 @@ export const getTransactions = async (): Promise<Transaction[]> => {
     console.log('[getTransactions] Received transactions:', data.length);
 
     // Map backend transactions to frontend Transaction type
-    const mapped = data.map((tx: any) => ({
-      id: tx.id,
-      walletId: tx.walletId,
-      type: tx.type,
-      amount: tx.amount,
-      currency: 'ETH',
-      address: tx.type === 'send' ? tx.to : tx.from,
-      timestamp: tx.createdAt,
-      status: tx.status,
-      usdValue: '0', // TODO: Calculate
-      hash: tx.txHash,
-      fee: tx.gasUsed || '0',
-      gasPrice: tx.gasPrice || '0',
-      blockNumber: tx.blockNumber?.toString() || '0',
-      confirmations: tx.status === 'completed' ? 1 : 0,
-      fullDate: new Date(tx.createdAt).toLocaleString(),
-      nonce: tx.nonce?.toString() || '',
-      labels: [],
-      // Scheduled payment fields
-      isScheduled: tx.isScheduled || false,
-      scheduledFor: tx.scheduledFor,
-      recipientName: tx.recipientName,
-      note: tx.note,
-    }));
+    const ETH_PRICE = 3243.0; // ETH to USD conversion rate
+    const mapped = data.map((tx: any) => {
+      const amount = parseFloat(tx.amount || '0');
+      const usdValue = (amount * ETH_PRICE).toFixed(2);
+      
+      return {
+        id: tx.id,
+        walletId: tx.walletId,
+        type: tx.type,
+        amount: tx.amount,
+        currency: 'ETH',
+        address: tx.type === 'send' ? tx.to : tx.from,
+        timestamp: tx.createdAt,
+        status: tx.status,
+        usdValue: usdValue,
+        hash: tx.txHash,
+        fee: tx.gasUsed || '0',
+        gasPrice: tx.gasPrice || '0',
+        blockNumber: tx.blockNumber?.toString() || '0',
+        confirmations: tx.status === 'completed' ? 1 : 0,
+        fullDate: new Date(tx.createdAt).toLocaleString(),
+        nonce: tx.nonce?.toString() || '',
+        labels: [],
+        // Scheduled payment fields
+        isScheduled: tx.isScheduled || false,
+        scheduledFor: tx.scheduledFor,
+        recipientName: tx.recipientName,
+        note: tx.note,
+      };
+    });
     
     console.log('[getTransactions] Mapped transactions:', mapped.length);
     return mapped;
@@ -166,6 +253,27 @@ export const getTransactions = async (): Promise<Transaction[]> => {
     console.error('[getTransactions] Error fetching transactions:', error);
     return [];
   }
+};
+
+/**
+ * Sync transactions from blockchain (fetches missing transactions)
+ */
+export const syncTransactions = async (userId?: string): Promise<{ message: string; newTransactions: number; newIncoming?: number; newOutgoing?: number }> => {
+  const userIdToUse = userId || getUserId();
+  
+  const response = await fetch(`${WALLET_API_BASE}/wallet/sync-incoming`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-user-id': userIdToUse,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to sync transactions');
+  }
+
+  return response.json();
 };
 
 /**

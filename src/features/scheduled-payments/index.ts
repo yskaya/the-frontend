@@ -25,6 +25,7 @@ export {
   useScheduledPayment,
   useCreateScheduledPayment,
   useCancelScheduledPayment,
+  useRefreshScheduledPayments,
 } from './hooks';
 
 // UI Components

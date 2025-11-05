@@ -25,7 +25,7 @@ export function TransactionToSignPanel() {
 
       {/* Empty State */}
       {!hasPendingTransaction && !isLoading && (
-        <div className="p-8 rounded-xl bg-white/5 border border-white/10 text-center">
+        <div className="placeholder">
           <AlertCircle className="h-12 w-12 text-gray-500 mx-auto mb-3 opacity-50" />
           <p className="text-gray-400">No pending transactions</p>
           <p className="text-gray-500 text-sm mt-1">Signing functionality coming soon</p>
