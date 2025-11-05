@@ -30,13 +30,27 @@ export const LoginGoogleButton: React.FC<LoginGoogleButtonProps> = ({
         
         if (data && data.user) {
           console.log('[LoginGoogleButton] Login successful, user:', data.user);
+          
+          // Store tokens in localStorage as fallback if cookies are blocked
+          if (data.tokens) {
+            console.log('[LoginGoogleButton] Storing tokens in localStorage as fallback');
+            localStorage.setItem('access_token', data.tokens.accessToken);
+            localStorage.setItem('refresh_token', data.tokens.refreshToken);
+            localStorage.setItem('user_id', data.user.id);
+          }
+          
           setUser(data.user);
           
           // Set redirecting state to prevent error flash
           setIsRedirecting(true);
           
+          // Wait a moment for cookies to be set before redirecting
+          console.log('[LoginGoogleButton] Waiting 500ms for cookies to be set...');
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          console.log('[LoginGoogleButton] Cookies after wait:', document.cookie);
           console.log('[LoginGoogleButton] Redirecting to /dashboard...');
-          // Redirect immediately (cookies are set by backend response)
+          // Redirect (cookies should be set by backend response, with localStorage as fallback)
           window.location.href = '/dashboard';
         } else if (!data) {
           // Login failed but didn't throw - error notification shown by api.client

@@ -56,11 +56,27 @@ export class ApiClient {
           return config;
         }
 
+        // Add Authorization header with token from localStorage if cookies are blocked
+        // This is a fallback for cross-origin cookie blocking
+        if (typeof window !== 'undefined') {
+          const accessToken = localStorage.getItem('access_token');
+          if (accessToken) {
+            config.headers['Authorization'] = `Bearer ${accessToken}`;
+            console.log('[ApiClient] Added Authorization header with token from localStorage');
+          }
+        }
+        
         // Add user ID header for backend microservices
-        // Get from cookies if available (set during login)
+        // Get from cookies first, then localStorage as fallback (for cross-origin cookie blocking)
+        let userId: string | null = null;
         const cookies = document.cookie;
         const userIdMatch = cookies.match(/user_id=([^;]+)/);
-        const userId = userIdMatch ? userIdMatch[1] : null;
+        userId = userIdMatch ? userIdMatch[1] : null;
+        
+        // Fallback to localStorage if cookies are blocked
+        if (!userId && typeof window !== 'undefined') {
+          userId = localStorage.getItem('user_id');
+        }
         
         // Only add x-user-id if we have a real userId (not for login/logout)
         if (userId) {
