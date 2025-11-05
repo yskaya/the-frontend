@@ -63,26 +63,17 @@ export function TransactionDetailsDialog({ transaction }: TransactionDetailsDial
             )}
           </div>
           <div className="flex-1">
-            <h3 className="capitalize mb-1 text-black text-xl font-semibold">{transaction.type}</h3>
-            <div className="flex items-center gap-2">
-              <Badge
-                variant={transaction.status === "completed" ? "default" : "outline"}
-                className={
-                  transaction.status === "pending"
-                    ? "border-yellow-500/50 text-yellow-600 bg-yellow-50"
-                    : transaction.status === "completed"
-                    ? "bg-green-50 text-green-600 border-green-500/50"
-                    : ""
-                }
-              >
-                {transaction.status === "completed" && <CheckCircle2 className="h-3 w-3 mr-1" />}
-                {transaction.status === "pending" && <Clock className="h-3 w-3 mr-1" />}
-                {transaction.status}
-              </Badge>
-              {/* TODO: Calculate real confirmations from current block number - block number of transaction */}
-              <span className="text-xs text-gray-500">
-                {transaction.confirmations > 0 ? `${transaction.confirmations}+ confirmations` : 'Pending confirmation'}
-              </span>
+            <h3 className="capitalize mb-1 text-black text-xl font-semibold">
+              {transaction.type === "send" ? "Sent" : "Received"}
+            </h3>
+            <div className="text-sm text-gray-500">
+              {new Date(transaction.timestamp).toLocaleString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                hour: 'numeric', 
+                minute: '2-digit',
+                hour12: true 
+              })}
             </div>
           </div>
         </div>
@@ -123,16 +114,6 @@ export function TransactionDetailsDialog({ transaction }: TransactionDetailsDial
                   <Copy className="h-3 w-3" />
                 </Button>
               </div>
-            </div>
-
-            <div className="flex justify-between">
-              <p className="text-gray-600">Status</p>
-              <p className="capitalize text-black font-medium">{transaction.status}</p>
-            </div>
-
-            <div className="flex justify-between">
-              <p className="text-gray-600">Date & Time</p>
-              <p className="text-black">{transaction.fullDate}</p>
             </div>
 
             <div className="flex justify-between">
@@ -194,17 +175,19 @@ export function TransactionDetailsDialog({ transaction }: TransactionDetailsDial
         <div className="space-y-3">
           <p className="text-sm font-semibold text-black">Transaction Hash</p>
           <div className="flex items-center gap-2">
-            <code className="text-sm text-black font-mono bg-gray-50 px-3 py-2 rounded-lg flex-1 border border-gray-200 break-all">
-              {transaction.hash}
+            <code className="text-sm text-black font-mono flex-1">
+              {transaction.hash.length > 42 
+                ? `${transaction.hash.slice(0, 42)}...` 
+                : transaction.hash}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-4 w-4 ml-2 inline-flex items-center justify-center hover:bg-gray-100"
+                onClick={handleCopyHash}
+              >
+                <Copy className="h-3 w-3" />
+              </Button>
             </code>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleCopyHash}
-              className="h-9 w-9 shrink-0 rounded-lg bg-gray-100 hover:bg-gray-200 text-black border border-gray-300"
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
           </div>
           <Button
             variant="outline"

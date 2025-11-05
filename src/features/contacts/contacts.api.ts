@@ -1,17 +1,22 @@
 import { api } from '@/lib';
 import { Contact } from './contacts.types';
 
+// Use environment variable with fallback
+const CONTACTS_API_BASE = process.env.NEXT_PUBLIC_CONTACTS_API_URL || 'http://localhost:5005/api';
+
 /**
  * Request/Response types (API-specific)
  */
 export interface CreateContactRequest {
-  name: string;
+  name?: string;
+  email: string;
   address: string;
   note?: string;
 }
 
 export interface UpdateContactRequest {
   name?: string;
+  email?: string;
   note?: string;
 }
 
@@ -19,7 +24,7 @@ export interface UpdateContactRequest {
  * Get all contacts
  */
 export const getContacts = async (): Promise<Contact[]> => {
-  const response = await api.get<Contact[]>('http://localhost:5005/api/contacts');
+  const response = await api.get<Contact[]>(`${CONTACTS_API_BASE}/contacts`);
   return response.data || [];
 };
 
@@ -27,7 +32,7 @@ export const getContacts = async (): Promise<Contact[]> => {
  * Create a new contact
  */
 export const createContact = async (data: CreateContactRequest): Promise<Contact> => {
-  const response = await api.post<Contact>('http://localhost:5005/api/contacts', data);
+  const response = await api.post<Contact>(`${CONTACTS_API_BASE}/contacts`, data);
   if (!response.data) {
     throw new Error('Failed to create contact');
   }
@@ -38,7 +43,7 @@ export const createContact = async (data: CreateContactRequest): Promise<Contact
  * Update a contact
  */
 export const updateContact = async (id: string, data: UpdateContactRequest): Promise<Contact> => {
-  const response = await api.patch<Contact>(`http://localhost:5005/api/contacts/${id}`, data);
+  const response = await api.patch<Contact>(`${CONTACTS_API_BASE}/contacts/${id}`, data);
   if (!response.data) {
     throw new Error('Failed to update contact');
   }
@@ -49,6 +54,6 @@ export const updateContact = async (id: string, data: UpdateContactRequest): Pro
  * Delete a contact
  */
 export const deleteContact = async (id: string): Promise<void> => {
-  await api.delete(`http://localhost:5005/api/contacts/${id}`);
+  await api.delete(`${CONTACTS_API_BASE}/contacts/${id}`);
   return;
 };

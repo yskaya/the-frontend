@@ -1,4 +1,4 @@
-import { ArrowDownLeft, ArrowUpRight, Tag, ExternalLink, FileText, Loader2 } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Tag, ExternalLink, FileText, Loader2, Clock, Calendar } from "lucide-react";
 import { Badge } from "@/ui/badge";
 import { Dialog, DialogContent, DialogTrigger } from "@/ui/dialog";
 import { TransactionDetailsDialog } from "./TransactionDetailsDialog";
@@ -58,12 +58,16 @@ export function TransactionsPanel() {
                 {/* Icon */}
                 <div
                   className={`flex items-center justify-center h-10 w-10 rounded-full shrink-0 ${
-                    tx.type === "receive"
+                    tx.isScheduled
+                      ? "bg-purple-500/20"
+                      : tx.type === "receive"
                       ? "bg-green-500/20"
                       : "bg-blue-500/20"
                   }`}
                 >
-                  {tx.type === "receive" ? (
+                  {tx.isScheduled ? (
+                    <Clock className="h-5 w-5 text-purple-400" />
+                  ) : tx.type === "receive" ? (
                     <ArrowDownLeft className="h-5 w-5 text-green-400" />
                   ) : (
                     <ArrowUpRight className="h-5 w-5 text-blue-400" />
@@ -74,11 +78,21 @@ export function TransactionsPanel() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <p className="capitalize font-medium text-white text-sm">
-                      {tx.type}
+                      {tx.isScheduled ? "Scheduled Payment" : (tx.type === "send" ? "Sent" : "Received")}
                     </p>
-                    {tx.status === "pending" && (
+                    {tx.isScheduled && (
+                      <Badge variant="outline" className="text-xs border-purple-500/50 text-purple-400 bg-purple-500/10">
+                        Scheduled
+                      </Badge>
+                    )}
+                    {tx.status === "pending" && !tx.isScheduled && (
                       <Badge variant="outline" className="text-xs border-yellow-500/50 text-yellow-400 bg-yellow-500/10">
                         Pending
+                      </Badge>
+                    )}
+                    {tx.status === "processing" && tx.isScheduled && (
+                      <Badge variant="outline" className="text-xs border-orange-500/50 text-orange-400 bg-orange-500/10">
+                        Processing
                       </Badge>
                     )}
                     {tx.labels && tx.labels.length > 0 && (
@@ -91,10 +105,30 @@ export function TransactionsPanel() {
                     )}
                   </div>
                   <div className="flex items-center gap-2 text-xs text-gray-400">
-                    <code className="text-gray-500">{tx.address.slice(0, 6)}...{tx.address.slice(-4)}</code>
+                    <code className="text-gray-500">
+                      {tx.recipientName || `${tx.address.slice(0, 6)}...${tx.address.slice(-4)}`}
+                    </code>
                     <span>•</span>
-                    <span>{tx.timestamp}</span>
+                    {tx.isScheduled && tx.scheduledFor ? (
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {new Date(tx.scheduledFor).toLocaleString()}
+                      </span>
+                    ) : (
+                      <span>{new Date(tx.timestamp).toLocaleString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        hour: 'numeric', 
+                        minute: '2-digit',
+                        hour12: true 
+                      })}</span>
+                    )}
                   </div>
+                  {tx.isScheduled && tx.note && (
+                    <div className="text-xs text-gray-500 mt-1 truncate">
+                      {tx.note}
+                    </div>
+                  )}
                 </div>
 
                 {/* Amount */}

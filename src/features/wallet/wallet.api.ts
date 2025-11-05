@@ -1,13 +1,17 @@
 import { Wallet, Transaction } from './wallet.types';
 
-const WALLET_API_BASE = 'http://localhost:5006/api';
+// Use environment variable with fallback
+const WALLET_API_BASE = process.env.NEXT_PUBLIC_WALLET_API_URL || 'http://localhost:5006/api';
 
 // Helper to get user ID from cookie
 const getUserId = (): string => {
   if (typeof document === 'undefined') return 'test-user-1'; // Server-side fallback
   const cookies = document.cookie;
+  console.log('[getUserId] Available cookies:', cookies);
   const userIdMatch = cookies.match(/user_id=([^;]+)/);
-  return userIdMatch ? userIdMatch[1] : 'test-user-1'; // Fallback for testing
+  const userId = userIdMatch ? userIdMatch[1] : 'test-user-1'; // Fallback for testing
+  console.log('[getUserId] Extracted user ID:', userId);
+  return userId;
 };
 
 /**
@@ -40,12 +44,15 @@ export interface CreateWalletResponse {
 /**
  * Create a new wallet for the user
  */
-export const createWallet = async (): Promise<CreateWalletResponse> => {
+export const createWallet = async (userId?: string): Promise<CreateWalletResponse> => {
+  const userIdToUse = userId || getUserId();
+  console.log('[createWallet] Using user ID:', userIdToUse);
+  
   const response = await fetch(`${WALLET_API_BASE}/wallet`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-user-id': getUserId(),
+      'x-user-id': userIdToUse,
     },
   });
 
@@ -60,13 +67,16 @@ export const createWallet = async (): Promise<CreateWalletResponse> => {
 /**
  * Get user's wallet with current balance
  */
-export const getWallet = async (): Promise<Wallet | null> => {
+export const getWallet = async (userId?: string): Promise<Wallet | null> => {
   try {
+    const userIdToUse = userId || getUserId();
+    console.log('[getWallet] Using user ID:', userIdToUse);
+    
     const response = await fetch(`${WALLET_API_BASE}/wallet`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'x-user-id': getUserId(),
+        'x-user-id': userIdToUse,
       },
     });
 
@@ -141,8 +151,13 @@ export const getTransactions = async (): Promise<Transaction[]> => {
       blockNumber: tx.blockNumber?.toString() || '0',
       confirmations: tx.status === 'completed' ? 1 : 0,
       fullDate: new Date(tx.createdAt).toLocaleString(),
-      nonce: tx.nonce.toString(),
+      nonce: tx.nonce?.toString() || '',
       labels: [],
+      // Scheduled payment fields
+      isScheduled: tx.isScheduled || false,
+      scheduledFor: tx.scheduledFor,
+      recipientName: tx.recipientName,
+      note: tx.note,
     }));
     
     console.log('[getTransactions] Mapped transactions:', mapped.length);

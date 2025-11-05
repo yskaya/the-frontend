@@ -32,4 +32,9 @@ export interface Transaction {
   fullDate: string;
   nonce: string;
   labels?: string[];
+  // Scheduled payment fields
+  isScheduled?: boolean;
+  scheduledFor?: string;
+  recipientName?: string;
+  note?: string;
 }

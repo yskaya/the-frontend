@@ -13,6 +13,7 @@ import {
   useDeleteContact,
   type Contact 
 } from "@/features/contacts";
+import type { CreateContactRequest, UpdateContactRequest } from "./contacts.api";
 
 interface ContactsPanelProps {
   onSendTo?: (address: string, name: string) => void;
@@ -30,24 +31,32 @@ export function ContactsPanel({ onSendTo }: ContactsPanelProps) {
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [newContactName, setNewContactName] = useState("");
+  const [newContactEmail, setNewContactEmail] = useState("");
   const [newContactAddress, setNewContactAddress] = useState("");
   const [newContactNote, setNewContactNote] = useState("");
+  
+  // Inline note editing state
+  const [isEditingNote, setIsEditingNote] = useState(false);
+  const [editNote, setEditNote] = useState("");
 
   const handleAddContact = async () => {
-    if (!newContactName.trim() || !newContactAddress.trim()) {
-      toast.error("Please fill in all required fields");
+    if (!newContactEmail.trim() || !newContactAddress.trim()) {
+      toast.error("Please fill in email and address fields");
       return;
     }
     
     await createContactMutation.mutateAsync({
-      name: newContactName.trim(),
+      name: newContactName.trim() || undefined,
+      email: newContactEmail.trim(),
       address: newContactAddress.trim(),
       note: newContactNote || undefined,
     });
     
     setNewContactName("");
+    setNewContactEmail("");
     setNewContactAddress("");
     setNewContactNote("");
     setShowAddForm(false);
@@ -58,15 +67,6 @@ export function ContactsPanel({ onSendTo }: ContactsPanelProps) {
     setSelectedContact(null);
   };
 
-  const handleCopyAddress = (address: string) => {
-    navigator.clipboard.writeText(address);
-    toast.success("Address copied");
-  };
-
-  const handleCopyName = (name: string) => {
-    navigator.clipboard.writeText(name);
-    toast.success("Name copied");
-  };
 
   const handleSendTo = (contact: Contact) => {
     if (onSendTo) {
@@ -80,14 +80,15 @@ export function ContactsPanel({ onSendTo }: ContactsPanelProps) {
 
   const handleStartEdit = (contact: Contact) => {
     setEditName(contact.name);
+    setEditEmail(contact.email);
     setIsEditing(true);
   };
 
   const handleSaveEdit = async () => {
     if (!selectedContact) return;
     
-    if (!editName.trim()) {
-      toast.error("Name cannot be empty");
+    if (!editName.trim() || !editEmail.trim()) {
+      toast.error("Name and email cannot be empty");
       return;
     }
 
@@ -95,6 +96,7 @@ export function ContactsPanel({ onSendTo }: ContactsPanelProps) {
       id: selectedContact.id,
       data: {
         name: editName.trim(),
+        email: editEmail.trim(),
       },
     });
     
@@ -105,11 +107,54 @@ export function ContactsPanel({ onSendTo }: ContactsPanelProps) {
   const handleCancelEdit = () => {
     setIsEditing(false);
     setEditName("");
+    setEditEmail("");
+  };
+
+  // Inline note editing functions
+  const handleStartEditNote = () => {
+    if (!selectedContact) return;
+    setEditNote(selectedContact.note || "");
+    setIsEditingNote(true);
+  };
+
+  const handleSaveNote = async () => {
+    if (!selectedContact) return;
+    
+    try {
+      const updated = await updateContactMutation.mutateAsync({
+        id: selectedContact.id,
+        data: {
+          note: editNote.trim() || undefined,
+        },
+      });
+      
+      setSelectedContact(updated);
+      setIsEditingNote(false);
+      setEditNote("");
+    } catch (error) {
+      console.error('Failed to update note:', error);
+    }
+  };
+
+  const handleCancelEditNote = () => {
+    setIsEditingNote(false);
+    setEditNote("");
+  };
+
+  const handleNoteKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSaveNote();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      handleCancelEditNote();
+    }
   };
 
   // Filter contacts
   const filteredContacts = contacts.filter(c => 
     c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
     c.address.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -122,6 +167,15 @@ export function ContactsPanel({ onSendTo }: ContactsPanelProps) {
           <h2 className="text-black text-xl font-semibold">Contacts</h2>
         </div>
         <p className="text-gray-600 text-sm">Manage saved wallet addresses</p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-3 gap-2 border-gray-300 text-black hover:bg-gray-100"
+          onClick={() => setShowAddForm(!showAddForm)}
+        >
+          <Plus className="h-4 w-4" />
+          Add Contact
+        </Button>
       </div>
 
       {/* Search Bar */}
@@ -135,26 +189,22 @@ export function ContactsPanel({ onSendTo }: ContactsPanelProps) {
         />
       </div>
 
-      {/* Add Contact Button */}
-      <Button
-        variant="outline"
-        size="sm"
-        className="w-full gap-2 border-gray-300 text-black hover:bg-gray-100"
-        onClick={() => setShowAddForm(!showAddForm)}
-      >
-        <Plus className="h-4 w-4" />
-        Add Contact
-      </Button>
-
       {/* Add Contact Form */}
       {showAddForm && (
         <>
           <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 space-y-3">
             <Input
-              placeholder="Contact name *"
+              placeholder="Contact name (optional)"
               value={newContactName}
               onChange={(e) => setNewContactName(e.target.value)}
               className="bg-white border-gray-300 text-black placeholder:text-gray-400"
+            />
+            <Input
+              placeholder="Email address *"
+              value={newContactEmail}
+              onChange={(e) => setNewContactEmail(e.target.value)}
+              className="bg-white border-gray-300 text-black placeholder:text-gray-400"
+              type="email"
             />
             <Input
               placeholder="Wallet address (0x...) *"
@@ -215,12 +265,19 @@ export function ContactsPanel({ onSendTo }: ContactsPanelProps) {
             filteredContacts.map((contact) => (
               <button
                 key={contact.id}
-                onClick={() => setSelectedContact(contact)}
+                onClick={() => {
+                  setSelectedContact(contact);
+                  setIsEditingNote(false);
+                  setEditNote("");
+                }}
                 className="w-full bg-gray-50 rounded-lg p-3 border border-gray-200 hover:bg-gray-100 hover:border-gray-300 transition-all text-left"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-black mb-1">{contact.name}</p>
+                    <p className="font-medium text-black mb-1">
+                      {contact.name || 'Unnamed Contact'}
+                    </p>
+                    <p className="text-xs text-gray-600 mb-1">{contact.email}</p>
                     <code className="text-xs text-gray-500 block truncate">
                       {contact.address.slice(0, 10)}...{contact.address.slice(-8)}
                     </code>
@@ -233,10 +290,12 @@ export function ContactsPanel({ onSendTo }: ContactsPanelProps) {
       </ScrollArea>
 
       {/* Contact Detail Dialog */}
-      <Dialog open={!!selectedContact} onOpenChange={(open) => {
+      <Dialog open={!!selectedContact}         onOpenChange={(open) => {
         if (!open) {
           setSelectedContact(null);
           setIsEditing(false);
+          setIsEditingNote(false);
+          setEditNote("");
         }
       }}>
         <DialogContent>
@@ -278,6 +337,15 @@ export function ContactsPanel({ onSendTo }: ContactsPanelProps) {
                           autoFocus
                         />
                       </div>
+                      <div className="space-y-2">
+                        <p className="text-xs text-gray-500 uppercase tracking-wide">Email</p>
+                        <Input
+                          value={editEmail}
+                          onChange={(e) => setEditEmail(e.target.value)}
+                          className="bg-gray-50 border-gray-300 text-black"
+                          type="email"
+                        />
+                      </div>
                     </div>
 
                     <div className="flex gap-2">
@@ -296,21 +364,87 @@ export function ContactsPanel({ onSendTo }: ContactsPanelProps) {
                         Cancel
                       </Button>
                     </div>
+                    
+                    {/* Delete Button in Edit Mode */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full gap-2 border-red-300 text-red-600 hover:bg-red-50"
+                      onClick={() => handleDelete(selectedContact.id)}
+                      disabled={deleteContactMutation.isPending}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      {deleteContactMutation.isPending ? "Deleting..." : "Delete Contact"}
+                    </Button>
                   </>
                 ) : (
                   <>
-                    {/* Note */}
-                    {selectedContact.note && (
+                    {/* Note - Inline Editable */}
+                    {isEditingNote ? (
                       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                        <p className="text-sm text-blue-800">{selectedContact.note}</p>
+                        <textarea
+                          value={editNote}
+                          onChange={(e) => setEditNote(e.target.value)}
+                          onKeyDown={handleNoteKeyDown}
+                          onBlur={handleSaveNote}
+                          className="w-full bg-transparent text-sm text-blue-800 resize-none border-none outline-none focus:ring-0 p-0"
+                          rows={3}
+                          autoFocus
+                          placeholder="Add a note..."
+                        />
+                      </div>
+                    ) : (
+                      <div 
+                        className="bg-blue-50 border border-blue-200 rounded-lg p-3 cursor-pointer hover:bg-blue-100 transition-colors"
+                        onClick={handleStartEditNote}
+                      >
+                        {selectedContact.note ? (
+                          <p className="text-sm text-blue-800 whitespace-pre-wrap">{selectedContact.note}</p>
+                        ) : (
+                          <p className="text-sm text-blue-600 italic">Click to add a note...</p>
+                        )}
                       </div>
                     )}
+
+                    {/* Email */}
+                    <div className="space-y-2">
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Email</p>
+                      <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                        <div className="flex items-center gap-2">
+                          <code className="text-sm flex-1 text-black font-mono">{selectedContact.email}</code>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 shrink-0 hover:bg-gray-100"
+                            onClick={() => {
+                              navigator.clipboard.writeText(selectedContact.email);
+                              toast.success("Email copied");
+                            }}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
 
                     {/* Address */}
                     <div className="space-y-2">
                       <p className="text-xs text-gray-500 uppercase tracking-wide">Wallet Address</p>
                       <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                        <code className="text-sm break-all block text-black font-mono">{selectedContact.address}</code>
+                        <div className="flex items-center gap-2">
+                          <code className="text-sm break-all flex-1 text-black font-mono">{selectedContact.address}</code>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 shrink-0 hover:bg-gray-100"
+                            onClick={() => {
+                              navigator.clipboard.writeText(selectedContact.address);
+                              toast.success("Address copied");
+                            }}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
 
@@ -324,36 +458,6 @@ export function ContactsPanel({ onSendTo }: ContactsPanelProps) {
                       >
                         <Send className="h-4 w-4" />
                         Send to {selectedContact.name}
-                      </Button>
-                      <div className="grid grid-cols-2 gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-2 border-gray-300 text-black hover:bg-gray-100"
-                          onClick={() => handleCopyName(selectedContact.name)}
-                        >
-                          <Copy className="h-4 w-4" />
-                          Copy Name
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-2 border-gray-300 text-black hover:bg-gray-100"
-                          onClick={() => handleCopyAddress(selectedContact.address)}
-                        >
-                          <Copy className="h-4 w-4" />
-                          Copy Address
-                        </Button>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full gap-2 border-red-300 text-red-600 hover:bg-red-50"
-                        onClick={() => handleDelete(selectedContact.id)}
-                        disabled={deleteContactMutation.isPending}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        {deleteContactMutation.isPending ? "Deleting..." : "Delete Contact"}
                       </Button>
                     </div>
                   </>

@@ -10,6 +10,7 @@ import { Dialog, DialogContent } from '@/ui/dialog';
 import { LogoutButton } from '@/components/LogoutButton';
 import { ContactsPanel } from '@/features/contacts';
 import { TransactionsPanel, SendCryptoDialog, ReceiveCryptoDialog } from '@/features/wallet';
+import { PayrollDialog, ScheduledPaymentsPanel, CompletedPayrollsPanel } from '@/features/scheduled-payments';
 import { toast } from 'sonner';
 
 
@@ -27,8 +28,8 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
   const [sendRecipient, setSendRecipient] = useState<{ address: string; name: string } | null>(null);
   const [contactsOpen, setContactsOpen] = useState(false);
   
-  const { data: wallet, isLoading: walletLoading } = useWallet();
-  const createWalletMutation = useCreateWallet();
+  const { data: wallet, isLoading: walletLoading } = useWallet(initialUser.id);
+  const createWalletMutation = useCreateWallet(initialUser.id);
 
   // Handler to open send dialog with pre-filled recipient
   const handleOpenSendTo = (address: string, name: string) => {
@@ -66,9 +67,17 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
             {/* Title & Email */}
             <div className="flex flex-col gap-1">
               <h1 className="text-xl font-bold text-white">PayPay</h1>
-              <span className="text-xs text-gray-400 truncate max-w-[250px]">
-                {initialUser.email}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-400 truncate max-w-[250px]">
+                  {initialUser.email}
+                </span>
+                <LogoutButton 
+                  className="text-xs text-red-400 hover:text-red-300 transition-colors cursor-pointer flex items-center gap-1"
+                >
+                  <LogOut className="h-3 w-3" />
+                  exit
+                </LogoutButton>
+              </div>
             </div>
           </div>
         </div>
@@ -77,14 +86,6 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
       {/* Fixed Menu Buttons - Always on top, within container */}
       <div className="fixed top-4 left-0 right-0 z-[100] pointer-events-none">
         <div className="max-w-4xl mx-auto px-6 flex justify-end gap-3 pointer-events-auto">
-          {/* Exit */}
-          <LogoutButton 
-            className="h-9 px-3 rounded-full border gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 border-red-500/30 hover:border-red-500 transition-all flex items-center"
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="hidden sm:inline text-sm">Exit</span>
-          </LogoutButton>
-          
           {/* Contacts */}
           <Sheet open={contactsOpen} onOpenChange={setContactsOpen}>
             <SheetTrigger asChild>
@@ -139,17 +140,8 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
           </div>
         ) : (
           <div className="rounded-2xl bg-gradient-to-br from-purple-500/20 via-blue-500/20 to-cyan-500/20 border border-white/20 p-8 backdrop-blur-xl">
-            {/* Network & Wallet Address - Top Row */}
+            {/* Wallet Address & Network - Top Row */}
             <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/10">
-              {/* Network indicator */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400">Network</span>
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
-                  <div className="h-2 w-2 rounded-full bg-green-500" />
-                  <p className="text-xs font-medium text-white">{wallet?.network || 'Sepolia'}</p>
-                </div>
-              </div>
-              
               {/* Wallet Address */}
               <div className="flex items-center gap-2">
                 <code className="text-xs text-gray-400 font-mono">
@@ -163,6 +155,15 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
                 >
                   <Copy className="h-3 w-3" />
                 </Button>
+              </div>
+              
+              {/* Network indicator */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-400">Network</span>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+                  <div className="h-2 w-2 rounded-full bg-green-500" />
+                  <p className="text-xs font-medium text-white">{wallet?.network || 'Sepolia'}</p>
+                </div>
               </div>
             </div>
 
@@ -202,7 +203,7 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
             </div>
 
             {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <Button
                 onClick={() => setSendOpen(true)}
                 className="h-12 gap-2 bg-white text-black hover:bg-gray-100 rounded-xl font-semibold"
@@ -217,14 +218,34 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
                 <Share2 className="h-5 w-5" />
                 Receive
               </Button>
+              <PayrollDialog 
+                buttonClassName="h-12 gap-2 bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-white hover:from-purple-500/30 hover:to-blue-500/30 border border-purple-500/50 rounded-xl font-semibold"
+                buttonText="Schedule"
+              />
             </div>
           </div>
         )}
 
-        {/* Transaction History - Only show if wallet exists */}
+        {/* Scheduled and To Sign - Two columns */}
         {wallet && (
-          <div className="mt-8">
-            <TransactionsPanel />
+          <div className="mt-8 space-y-6">
+            {/* Top Row: Scheduled and To Sign side by side */}
+            <div className="grid grid-cols-2 gap-6">
+              {/* Left Column - Scheduled */}
+              <div>
+                <ScheduledPaymentsPanel />
+              </div>
+
+              {/* Right Column - To Sign */}
+              <div>
+                <CompletedPayrollsPanel />
+              </div>
+            </div>
+
+            {/* Bottom Row: Transactions full width */}
+            <div>
+              <TransactionsPanel />
+            </div>
           </div>
         )}
       </main>

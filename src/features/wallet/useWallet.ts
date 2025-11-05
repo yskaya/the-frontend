@@ -15,10 +15,10 @@ import { Wallet, Transaction } from './wallet.types';
  * Get user's wallet with React Query caching + auto-refresh
  * Polls every 30 seconds to catch balance updates from incoming transactions
  */
-export const useWallet = () => {
+export const useWallet = (userId?: string) => {
   return useQuery<Wallet | null>({
-    queryKey: ['wallet'],
-    queryFn: getWallet,
+    queryKey: ['wallet', userId],
+    queryFn: () => getWallet(userId),
     staleTime: 1000 * 30, // Fresh for 30 seconds
     refetchInterval: 1000 * 30, // Auto-refresh every 30 seconds
     refetchIntervalInBackground: false, // Stop polling when tab is hidden
@@ -29,18 +29,18 @@ export const useWallet = () => {
 /**
  * Create wallet mutation
  */
-export const useCreateWallet = () => {
+export const useCreateWallet = (userId?: string) => {
   const queryClient = useQueryClient();
   
   return useMutation<CreateWalletResponse, Error, void>({
-    mutationFn: createWallet,
+    mutationFn: () => createWallet(userId),
     onSuccess: (response) => {
       toast.success('Wallet created successfully!', {
         description: `Address: ${response.address.slice(0, 10)}...`,
       });
       
       // Invalidate wallet query to refetch fresh data
-      queryClient.invalidateQueries({ queryKey: ['wallet'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet', userId] });
     },
     onError: (error) => {
       toast.error('Failed to create wallet', { description: error.message });
