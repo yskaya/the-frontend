@@ -1,4 +1,4 @@
-import { CheckCircle2, Loader2, Calendar, XCircle, RefreshCw, Users } from "lucide-react";
+import { Loader2, Calendar, RefreshCw, Users } from "lucide-react";
 import { Badge } from "@/ui/badge";
 import { Button } from "@/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/ui/dialog";
@@ -72,7 +72,6 @@ export function CompletedPayrollsPanel() {
             const isCancelled = payroll.status === 'cancelled';
             const isFailed = payroll.status === 'failed';
             const totalAmount = payroll.recipients.reduce((sum, r) => sum + parseFloat(r.amount || '0'), 0);
-            const completedCount = payroll.recipients.filter(r => r.status === 'completed').length;
             const failedCount = payroll.recipients.filter(r => r.status === 'failed').length;
             
             return (

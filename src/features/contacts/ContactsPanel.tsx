@@ -13,7 +13,6 @@ import {
   useDeleteContact,
   type Contact 
 } from "@/features/contacts";
-import type { CreateContactRequest, UpdateContactRequest } from "./contacts.api";
 
 interface ContactsPanelProps {
   onSendTo?: (address: string, name: string) => void;
