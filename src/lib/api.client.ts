@@ -48,12 +48,27 @@ export class ApiClient {
     // Request interceptor
     this.client.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
+        // Don't add x-user-id header for auth/login endpoints (user not authenticated yet)
+        const isAuthLogin = config.url?.includes('/auth/login') || config.url?.includes('/auth/logout');
+        if (isAuthLogin) {
+          // Remove x-user-id if it was set elsewhere
+          delete config.headers['x-user-id'];
+          return config;
+        }
+
         // Add user ID header for backend microservices
         // Get from cookies if available (set during login)
         const cookies = document.cookie;
         const userIdMatch = cookies.match(/user_id=([^;]+)/);
-        const userId = userIdMatch ? userIdMatch[1] : 'test-user-1'; // Fallback for testing
-        config.headers['x-user-id'] = userId;
+        const userId = userIdMatch ? userIdMatch[1] : null;
+        
+        // Only add x-user-id if we have a real userId (not for login/logout)
+        if (userId) {
+          config.headers['x-user-id'] = userId;
+        } else {
+          // Don't add x-user-id if no userId - let backend handle it
+          delete config.headers['x-user-id'];
+        }
         return config;
       },
       (error: AxiosError) => {
