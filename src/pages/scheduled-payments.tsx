@@ -27,7 +27,7 @@ export default function ScheduledPaymentsPage() {
           <li>✅ Payments are checked every minute and executed when due</li>
           <li>✅ You can cancel pending payments before they execute</li>
           <li>✅ Make sure you have sufficient balance when the payment executes</li>
-          <li>⚠️ Failed payments (e.g., insufficient balance) will be marked as failed and won't retry</li>
+          <li>⚠️ Failed payments (e.g., insufficient balance) will be marked as failed and won&apos;t retry</li>
         </ul>
       </div>
     </div>
