@@ -3,7 +3,6 @@ import { GetServerSideProps } from 'next';
 import { redirectIfAuthenticated } from '@/features/auth';
 import { LoginGoogleButtonSkeleton } from '@/components/LoginGoogleButton/LoginGoogleButtonSkeleton';
 import Link from 'next/link';
-import '../components.css';
 
 // ✨ LoginGoogleButton needs GoogleOAuthProvider, so we load it client-side only
 const LoginGoogleButton = dynamic(

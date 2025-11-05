@@ -6,7 +6,6 @@ import { TransactionDetailsDialog } from "./TransactionDetailsDialog";
 import { useTransactions, useRefreshTransactions, useSyncTransactions } from "./useWallet";
 import type { Transaction } from "./wallet.types";
 import { formatRelativeDate } from "@/lib/utils";
-import "../../components.css";
 
 // Format date as "May 26, 2025"
 function formatDate(date: string | Date): string {

@@ -7,7 +7,8 @@ import type { Contact } from '@/features/contacts/contacts.types';
 let mockContacts: Contact[] = [
   { 
     id: "1", 
-    name: "Main Exchange", 
+    name: "Main Exchange",
+    email: "exchange@example.com",
     address: "0x8f3d4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f", 
     note: "Primary trading account",
     createdAt: "2025-10-15T10:30:00Z",
@@ -15,14 +16,16 @@ let mockContacts: Contact[] = [
   },
   { 
     id: "2", 
-    name: "Backup Exchange", 
+    name: "Backup Exchange",
+    email: "backup@example.com",
     address: "0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b", 
     createdAt: "2025-10-16T14:20:00Z",
     updatedAt: "2025-10-16T14:20:00Z"
   },
   { 
     id: "3", 
-    name: "Hardware Wallet", 
+    name: "Hardware Wallet",
+    email: "hardware@example.com",
     address: "0x7b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c", 
     note: "Cold storage",
     createdAt: "2025-10-10T09:00:00Z",
@@ -30,28 +33,32 @@ let mockContacts: Contact[] = [
   },
   { 
     id: "4", 
-    name: "Alice", 
+    name: "Alice",
+    email: "alice@example.com",
     address: "0x9e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f", 
     createdAt: "2025-10-12T16:45:00Z",
     updatedAt: "2025-10-12T16:45:00Z"
   },
   { 
     id: "5", 
-    name: "Bob", 
+    name: "Bob",
+    email: "bob@example.com",
     address: "0x2f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a", 
     createdAt: "2025-10-13T11:30:00Z",
     updatedAt: "2025-10-13T11:30:00Z"
   },
   { 
     id: "6", 
-    name: "Company Treasury", 
+    name: "Company Treasury",
+    email: "treasury@example.com",
     address: "0x5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d", 
     createdAt: "2025-10-14T13:15:00Z",
     updatedAt: "2025-10-14T13:15:00Z"
   },
   { 
     id: "7", 
-    name: "Quick Wallet", 
+    name: "Quick Wallet",
+    email: "quick@example.com",
     address: "0x3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e",
     createdAt: "2025-10-17T08:00:00Z",
     updatedAt: "2025-10-17T08:00:00Z"

@@ -47,7 +47,10 @@ export const useCreateContact = () => {
       // Optimistic update: add to context immediately
       const optimisticContact: Contact = {
         id: `temp-${Date.now()}`,
-        ...newContactData,
+        name: newContactData.name || 'Unnamed Contact', // Provide default if name is optional
+        email: newContactData.email,
+        address: newContactData.address,
+        note: newContactData.note,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -61,7 +64,7 @@ export const useCreateContact = () => {
         dispatch({ type: 'ADD', payload: newContact });
       }
       
-      toast.success(`Contact "${newContact.name}" added`);
+      toast.success(`Contact "${newContact.name || 'Unnamed Contact'}" added`);
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
     },
     onError: (error, _, context) => {
@@ -90,7 +93,7 @@ export const useUpdateContact = () => {
         payload: { id: updatedContact.id, contact: updatedContact } 
       });
       
-      toast.success(`Contact "${updatedContact.name}" updated`);
+      toast.success(`Contact "${updatedContact.name || 'Unnamed Contact'}" updated`);
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
     },
     onError: (error) => {

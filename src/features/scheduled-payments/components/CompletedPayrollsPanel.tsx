@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { useState } from "react";
 import { formatRelativeDate } from "@/lib/utils";
 import { TransactionStatusIcon } from "@/ui/TransactionStatusIcon";
-import "../../../components.css";
 
 export function CompletedPayrollsPanel() {
   const { data: allPayrolls, isLoading, error, refetch } = usePayrolls();

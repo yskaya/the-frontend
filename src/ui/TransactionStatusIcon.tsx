@@ -1,5 +1,4 @@
 import { ArrowDown, ArrowUp, RefreshCw, XCircle } from "lucide-react";
-import "../components.css";
 
 export type TransactionStatus = "sent" | "failed" | "pending" | "received" | "scheduled";
 

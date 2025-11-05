@@ -12,7 +12,6 @@ import { ContactsPanel } from '@/features/contacts';
 import { TransactionsPanel, SendCryptoDialog, ReceiveCryptoDialog } from '@/features/wallet';
 import { PayrollDialog, ScheduledPaymentsPanel, CompletedPayrollsPanel } from '@/features/scheduled-payments';
 import { toast } from 'sonner';
-import '../components.css';
 
 
 interface DashboardProps {

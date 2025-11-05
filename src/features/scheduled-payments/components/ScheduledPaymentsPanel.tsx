@@ -7,7 +7,6 @@ import { Payroll } from "../types";
 import { toast } from "sonner";
 import { useState } from "react";
 import { TransactionStatusIcon } from "@/ui/TransactionStatusIcon";
-import "../../../components.css";
 
 // Format date as "May 26, 2025"
 function formatDate(date: string | Date): string {

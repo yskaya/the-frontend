@@ -3,7 +3,6 @@ import { useGoogleLogin } from '@react-oauth/google';
 import { useLogin } from '@/features/auth/useAuth';
 import { useAuthContext } from '@/features/auth/AuthProvider';
 import { LoginGoogleButtonSkeleton } from './LoginGoogleButtonSkeleton';
-import '../../components.css';
 
 interface LoginGoogleButtonProps {
   children?: React.ReactNode;
