@@ -15,16 +15,40 @@ export const LogoutButton: React.FC<LogoutButtonProps> = ({
   const logoutMutation = useLogout();
 
   const handleLogout = async () => {
-    // Use React Query mutation
-    const data = await logoutMutation.mutateAsync();
-    
-    // Only clear user and redirect if logout succeeded
-    if (data) {
+    try {
+      // Use React Query mutation
+      const data = await logoutMutation.mutateAsync();
+      
+      // CRITICAL: Always clear localStorage tokens, even if logout API call fails
+      // This ensures logout works even if cookies are deleted
+      console.log('[LogoutButton] Clearing localStorage tokens...');
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user_id');
+        console.log('[LogoutButton] ✅ localStorage tokens cleared');
+      }
+      
+      // Clear user state
       setUser(null);
-      // Use window.location for full page reload to clear cookies properly
-      window.location.href = '/';
+      
+      // Only redirect if logout succeeded OR if we cleared localStorage (force logout)
+      if (data || typeof window !== 'undefined') {
+        // Use window.location for full page reload to clear cookies properly
+        console.log('[LogoutButton] Redirecting to login...');
+        window.location.href = '/login';
+      }
+    } catch (error) {
+      // Even if logout API call fails, clear localStorage and redirect
+      console.error('[LogoutButton] Logout API call failed, but clearing localStorage anyway:', error);
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user_id');
+        setUser(null);
+        window.location.href = '/login';
+      }
     }
-    // If null, error notification already shown by mutation onError
   };
 
   return (

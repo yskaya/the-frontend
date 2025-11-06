@@ -29,17 +29,29 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
   const [isClientAuthValid, setIsClientAuthValid] = useState<boolean | null>(null);
   const [clientUser, setClientUser] = useState<User | null>(initialUser);
   
-  // Client-side auth validation fallback (for when cookies are blocked)
+  // Client-side auth validation fallback (for when cookies are blocked or deleted)
   useEffect(() => {
     // If we have initialUser from server-side, we're good
+    // BUT we still need to check localStorage as a fallback in case cookies are deleted
     if (initialUser && initialUser.id) {
       console.log('[Dashboard] ✅ Using server-side authenticated user');
       setIsClientAuthValid(true);
-      return;
+      
+      // CRITICAL: Also store user ID in localStorage if not already there
+      // This ensures localStorage is always available as fallback
+      const storedUserId = typeof window !== 'undefined' ? localStorage.getItem('user_id') : null;
+      if (!storedUserId && typeof window !== 'undefined') {
+        console.log('[Dashboard] Storing user ID in localStorage as fallback');
+        localStorage.setItem('user_id', initialUser.id);
+      }
+      
+      // Don't return early - continue to check localStorage as fallback
+      // This ensures if cookies are deleted, we can still authenticate
     }
     
-    // Otherwise, check localStorage for tokens (cookies blocked or not set yet)
-    console.log('[Dashboard] No server-side user, checking localStorage...');
+    // ALWAYS check localStorage for tokens (even if server-side auth worked)
+    // This ensures localStorage is always available as fallback if cookies are deleted
+    console.log('[Dashboard] Checking localStorage as fallback...');
     
     // Helper function to validate tokens and set user
     async function validateAndSetUser(accessToken: string, userId: string): Promise<boolean> {
@@ -94,17 +106,40 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
       console.log('[Dashboard] IMMEDIATE localStorage check:', {
         hasAccessToken: !!accessToken,
         hasUserId: !!userId,
+        hasInitialUser: !!initialUser,
         accessTokenPreview: accessToken ? accessToken.substring(0, 20) + '...' : null,
         userIdPreview: userId || null,
         allLocalStorageKeys: typeof window !== 'undefined' ? Object.keys(localStorage) : [],
       });
       
+      // If we have initialUser but localStorage tokens are missing, we need to set them
+      // This can happen if cookies worked but localStorage wasn't set during login
+      if (initialUser && initialUser.id && (!accessToken || !userId)) {
+        console.log('[Dashboard] WARNING: Server-side auth worked but localStorage is missing tokens');
+        console.log('[Dashboard] This means localStorage was not set during login - setting it now as fallback');
+        // Note: We can't set access_token here because we don't have it (cookies are HttpOnly)
+        // But we can set user_id for future use
+        if (!userId && typeof window !== 'undefined') {
+          localStorage.setItem('user_id', initialUser.id);
+        }
+        // We already have the user from server-side, so we're good
+        return true; // Success - we have initialUser
+      }
+      
+      // If we have tokens in localStorage, validate them
       if (accessToken && userId) {
         // Found tokens immediately - validate them right away
         console.log('[Dashboard] ✅ Tokens found immediately in localStorage, validating...');
         const success = await validateAndSetUser(accessToken, userId);
         return success; // Return true if successful
       }
+      
+      // If we have initialUser but no localStorage tokens, we're still good (cookies work)
+      if (initialUser && initialUser.id) {
+        console.log('[Dashboard] ✅ Using server-side user (cookies work, localStorage not needed)');
+        return true; // Success - we have initialUser
+      }
+      
       return false; // Not found, will retry
     };
     
@@ -141,9 +176,24 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
           }
           // Continue to next attempt if validation failed
         }
+        
+        // If we have initialUser but localStorage tokens are missing, we're still good
+        // This handles the case where cookies work but localStorage wasn't set
+        if (initialUser && initialUser.id) {
+          console.log('[Dashboard] ✅ Using server-side user (cookies work, localStorage not needed)');
+          setIsClientAuthValid(true);
+          return; // Success - we have initialUser
+        }
       }
       
       // If we get here, tokens were never found or validation failed after all attempts
+      // Check if we have initialUser as last resort
+      if (initialUser && initialUser.id) {
+        console.log('[Dashboard] ✅ Using server-side user as last resort (cookies work)');
+        setIsClientAuthValid(true);
+        return; // Success - we have initialUser
+      }
+      
       console.log('[Dashboard] ❌ No valid tokens found after all attempts, redirecting to login');
       setIsClientAuthValid(false);
       setTimeout(() => {
@@ -154,7 +204,7 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
     checkAuth();
   }, [initialUser]);
   
-  // Use clientUser if server-side user is not available (cookies blocked)
+  // Use clientUser if server-side user is not available (cookies blocked or deleted)
   const user = initialUser && initialUser.id ? initialUser : clientUser;
   
   // CRITICAL: All hooks must be called BEFORE any conditional returns
@@ -190,9 +240,22 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
   }
   
   // If we're still checking auth and don't have a user yet, show loading state
+  // BUT: If we have localStorage tokens, we're still checking, so don't redirect yet
   if (isClientAuthValid === null && !user) {
-    // Still checking auth - show nothing (or loading spinner)
-    return null; // Will either authenticate or redirect
+    // Check if we have localStorage tokens - if yes, we're still validating
+    const hasLocalStorageTokens = typeof window !== 'undefined' && 
+      localStorage.getItem('access_token') && 
+      localStorage.getItem('user_id');
+    
+    if (!hasLocalStorageTokens) {
+      // No tokens in localStorage either - we're truly not authenticated
+      // Still checking auth - show nothing (or loading spinner)
+      return null; // Will either authenticate or redirect
+    } else {
+      // We have localStorage tokens but validation is still in progress
+      // Wait a bit more before redirecting
+      return null; // Will either authenticate or redirect
+    }
   }
   
   // Type guard: At this point, we must have a user
