@@ -29,7 +29,7 @@ export class ApiClient {
     this.client = axios.create({
       baseURL,
       withCredentials: true, // Important for cookies
-      timeout: 30000, // 30 seconds for login operations (includes OAuth + multiple service calls)
+      timeout: 60000, // 60 seconds for login operations (includes OAuth + multiple service calls + network latency)
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
