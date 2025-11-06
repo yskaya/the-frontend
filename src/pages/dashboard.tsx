@@ -33,7 +33,7 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
   useEffect(() => {
     // If we have initialUser from server-side, we're good
     if (initialUser && initialUser.id) {
-      console.log('[Dashboard] Using server-side authenticated user');
+      console.log('[Dashboard] ✅ Using server-side authenticated user');
       setIsClientAuthValid(true);
       return;
     }
@@ -44,50 +44,64 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
     // CRITICAL: Wait a moment for localStorage to be set (especially after redirect from login)
     // This handles the case where we just logged in and redirected
     const checkAuth = async () => {
-      // Wait a bit for localStorage to be populated after redirect
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
-      const accessToken = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-      const userId = typeof window !== 'undefined' ? localStorage.getItem('user_id') : null;
-      
-      console.log('[Dashboard] localStorage check:', {
-        hasAccessToken: !!accessToken,
-        hasUserId: !!userId,
-      });
-      
-      if (!accessToken || !userId) {
-        console.log('[Dashboard] No tokens in localStorage after wait, redirecting to login');
-        setIsClientAuthValid(false);
-        // Small delay before redirect to prevent flash
-        setTimeout(() => {
-          window.location.href = '/login';
-        }, 100);
-        return;
-      }
-      
-      // Validate token with API call
-      console.log('[Dashboard] Validating token from localStorage...');
-      try {
-        const { validate } = await import('@/features/auth/auth.api');
-        const user = await validate();
-        if (user) {
-          console.log('[Dashboard] ✅ Client-side auth validated, user:', user.email);
-          setClientUser(user);
-          setIsClientAuthValid(true);
-        } else {
-          console.log('[Dashboard] ❌ Client-side auth validation failed');
-          setIsClientAuthValid(false);
-          setTimeout(() => {
-            window.location.href = '/login';
-          }, 100);
+      // CRITICAL: Increase wait time to ensure localStorage is fully populated after redirect
+      // Also check multiple times to handle race conditions
+      for (let attempt = 0; attempt < 5; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        const accessToken = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+        const userId = typeof window !== 'undefined' ? localStorage.getItem('user_id') : null;
+        
+        console.log(`[Dashboard] localStorage check attempt ${attempt + 1}:`, {
+          hasAccessToken: !!accessToken,
+          hasUserId: !!userId,
+          accessTokenPreview: accessToken ? accessToken.substring(0, 20) + '...' : null,
+          userIdPreview: userId || null,
+        });
+        
+        if (accessToken && userId) {
+          // Found tokens, validate them
+          console.log('[Dashboard] ✅ Tokens found in localStorage, validating...');
+          try {
+            const { validate } = await import('@/features/auth/auth.api');
+            const user = await validate();
+            if (user && user.id) {
+              console.log('[Dashboard] ✅ Client-side auth validated, user:', user.email);
+              setClientUser(user);
+              setIsClientAuthValid(true);
+              return; // Success - exit function
+            } else {
+              console.log('[Dashboard] ❌ Client-side auth validation returned invalid user');
+              // Continue to next attempt
+            }
+          } catch (error: any) {
+            console.error('[Dashboard] ❌ Client-side auth validation error:', error);
+            console.error('[Dashboard] Error details:', {
+              message: error?.message,
+              status: error?.response?.status,
+              data: error?.response?.data,
+            });
+            // If it's a 401/403, tokens are invalid - don't retry
+            if (error?.response?.status === 401 || error?.response?.status === 403) {
+              console.log('[Dashboard] Token is invalid (401/403), redirecting to login');
+              setIsClientAuthValid(false);
+              setTimeout(() => {
+                window.location.href = '/login';
+              }, 100);
+              return;
+            }
+            // For other errors, retry
+            console.log('[Dashboard] Retrying validation...');
+          }
         }
-      } catch (error) {
-        console.error('[Dashboard] ❌ Client-side auth validation error:', error);
-        setIsClientAuthValid(false);
-        setTimeout(() => {
-          window.location.href = '/login';
-        }, 100);
       }
+      
+      // If we get here, tokens were never found or validation failed after all attempts
+      console.log('[Dashboard] ❌ No valid tokens found after all attempts, redirecting to login');
+      setIsClientAuthValid(false);
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 100);
     };
     
     checkAuth();
@@ -97,8 +111,22 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
   const user = initialUser && initialUser.id ? initialUser : clientUser;
   
   // Don't render until we know auth status
-  if (isClientAuthValid === false || !user) {
+  // CRITICAL: Only redirect if we've explicitly determined auth failed
+  // Don't redirect if we're still checking (isClientAuthValid === null)
+  if (isClientAuthValid === false) {
+    // Auth check completed and failed - redirecting
     return null; // Will redirect
+  }
+  
+  // If we're still checking auth and don't have a user yet, show loading state
+  if (isClientAuthValid === null && !user) {
+    // Still checking auth - show nothing (or loading spinner)
+    return null; // Will either authenticate or redirect
+  }
+  
+  // Type guard: At this point, we must have a user
+  if (!user || !user.id) {
+    return null; // Shouldn't happen, but TypeScript needs this
   }
   
   const { data: wallet, isLoading: walletLoading } = useWallet(user.id);
