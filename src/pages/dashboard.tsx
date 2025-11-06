@@ -117,9 +117,17 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
   // Use clientUser if server-side user is not available (cookies blocked)
   const user = initialUser && initialUser.id ? initialUser : clientUser;
   
-  // Don't render until we know auth status
-  // CRITICAL: Only redirect if we've explicitly determined auth failed
-  // Don't redirect if we're still checking (isClientAuthValid === null)
+  // CRITICAL: All hooks must be called BEFORE any conditional returns
+  // This ensures hooks are called in the same order every render
+  // Use optional userId - hooks will handle undefined gracefully
+  const userId = user?.id;
+  const { data: wallet, isLoading: walletLoading } = useWallet(userId);
+  const createWalletMutation = useCreateWallet(userId);
+  const refreshWallet = useRefreshWallet(userId);
+  const syncTransactions = useSyncTransactions();
+  const hasSyncedOnLogin = useRef(false);
+  
+  // Now safe to do conditional returns AFTER all hooks are called
   if (isClientAuthValid === false) {
     // Auth check completed and failed - redirecting
     return null; // Will redirect
@@ -135,12 +143,6 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
   if (!user || !user.id) {
     return null; // Shouldn't happen, but TypeScript needs this
   }
-  
-  const { data: wallet, isLoading: walletLoading } = useWallet(user.id);
-  const createWalletMutation = useCreateWallet(user.id);
-  const refreshWallet = useRefreshWallet(user.id);
-  const syncTransactions = useSyncTransactions();
-  const hasSyncedOnLogin = useRef(false);
 
   // Handler to open send dialog with pre-filled recipient
   const handleOpenSendTo = (address: string, name: string) => {
