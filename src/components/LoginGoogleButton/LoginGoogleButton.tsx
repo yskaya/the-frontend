@@ -56,9 +56,24 @@ export const LoginGoogleButton: React.FC<LoginGoogleButtonProps> = ({
             user_id: !!localStorage.getItem('user_id'),
           });
           
-          // Small delay to ensure localStorage is set
-          await new Promise(resolve => setTimeout(resolve, 100));
+          // CRITICAL: Wait longer to ensure localStorage is set and cookies are being processed
+          // Also wait for the response to fully complete
+          await new Promise(resolve => setTimeout(resolve, 500));
           
+          // Verify localStorage is set before redirecting
+          const storedAccessToken = localStorage.getItem('access_token');
+          const storedUserId = localStorage.getItem('user_id');
+          
+          if (!storedAccessToken || !storedUserId) {
+            console.error('[LoginGoogleButton] ❌ CRITICAL: Tokens not stored in localStorage after 500ms!');
+            console.error('[LoginGoogleButton] Access token stored:', !!storedAccessToken);
+            console.error('[LoginGoogleButton] User ID stored:', !!storedUserId);
+            // Don't redirect if tokens aren't stored
+            setIsRedirecting(false);
+            return;
+          }
+          
+          console.log('[LoginGoogleButton] ✅ Tokens verified in localStorage before redirect');
           console.log('[LoginGoogleButton] Redirecting to /dashboard...');
           // Redirect - dashboard will use localStorage for auth if cookies aren't readable
           window.location.href = '/dashboard';

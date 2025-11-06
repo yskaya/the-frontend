@@ -38,21 +38,35 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
       return;
     }
     
-    // Otherwise, check localStorage for tokens (cookies blocked)
+    // Otherwise, check localStorage for tokens (cookies blocked or not set yet)
     console.log('[Dashboard] No server-side user, checking localStorage...');
-    const accessToken = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-    const userId = typeof window !== 'undefined' ? localStorage.getItem('user_id') : null;
     
-    if (!accessToken || !userId) {
-      console.log('[Dashboard] No tokens in localStorage, redirecting to login');
-      setIsClientAuthValid(false);
-      window.location.href = '/login';
-      return;
-    }
-    
-    // Validate token with API call
-    console.log('[Dashboard] Validating token from localStorage...');
-    const validateAuth = async () => {
+    // CRITICAL: Wait a moment for localStorage to be set (especially after redirect from login)
+    // This handles the case where we just logged in and redirected
+    const checkAuth = async () => {
+      // Wait a bit for localStorage to be populated after redirect
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      const accessToken = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+      const userId = typeof window !== 'undefined' ? localStorage.getItem('user_id') : null;
+      
+      console.log('[Dashboard] localStorage check:', {
+        hasAccessToken: !!accessToken,
+        hasUserId: !!userId,
+      });
+      
+      if (!accessToken || !userId) {
+        console.log('[Dashboard] No tokens in localStorage after wait, redirecting to login');
+        setIsClientAuthValid(false);
+        // Small delay before redirect to prevent flash
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 100);
+        return;
+      }
+      
+      // Validate token with API call
+      console.log('[Dashboard] Validating token from localStorage...');
       try {
         const { validate } = await import('@/features/auth/auth.api');
         const user = await validate();
@@ -63,16 +77,20 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
         } else {
           console.log('[Dashboard] ❌ Client-side auth validation failed');
           setIsClientAuthValid(false);
-          window.location.href = '/login';
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 100);
         }
       } catch (error) {
         console.error('[Dashboard] ❌ Client-side auth validation error:', error);
         setIsClientAuthValid(false);
-        window.location.href = '/login';
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 100);
       }
     };
     
-    validateAuth();
+    checkAuth();
   }, [initialUser]);
   
   // Use clientUser if server-side user is not available (cookies blocked)
@@ -348,25 +366,41 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
 // ✨ Server-side auth validation - instant redirect if not logged in
 // NOTE: If cookies are blocked, this will return no user, but client-side auth will handle it
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  const result = await requireAuth(context);
-  
-  // Pass user as initialUser for Suspense (if available)
-  // If cookies are blocked, result will have redirect, but we'll handle it client-side
-  if ('props' in result && result.props) {
+  try {
+    // Use validateServerAuth directly instead of requireAuth
+    // This allows us to NOT redirect if cookies aren't present, letting client-side handle it
+    const { validateServerAuth } = await import('@/features/auth/serverAuth');
+    const user = await validateServerAuth(context);
+    
+    // If user found via cookies (server-side auth worked), return it
+    if (user && user.id) {
+      console.log('[Dashboard SSR] ✅ Server-side auth successful, user:', user.email);
+      return {
+        props: {
+          initialUser: user,
+        },
+      };
+    }
+    
+    // If no user found via cookies, DON'T redirect - let client-side handle it with localStorage
+    // This prevents redirect loops when cookies aren't stored in browser (cross-origin issue)
+    console.log('[Dashboard SSR] Server-side auth failed (cookies blocked or not present)');
+    console.log('[Dashboard SSR] Allowing client-side auth to handle it with localStorage');
+    
     return {
       props: {
-        initialUser: result.props.user,
+        initialUser: null as any, // Will be handled client-side
+      },
+    };
+  } catch (error) {
+    console.error('[Dashboard SSR] Error in getServerSideProps:', error);
+    // On error, allow client-side to handle it
+    return {
+      props: {
+        initialUser: null as any,
       },
     };
   }
-  
-  // If server-side auth failed (cookies blocked), return empty props
-  // Client-side will check localStorage and validate
-  return {
-    props: {
-      initialUser: null as any, // Will be handled client-side
-    },
-  };
 };
 
 export default Dashboard;
