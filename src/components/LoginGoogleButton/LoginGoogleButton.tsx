@@ -31,12 +31,15 @@ export const LoginGoogleButton: React.FC<LoginGoogleButtonProps> = ({
         if (data && data.user) {
           console.log('[LoginGoogleButton] Login successful, user:', data.user);
           
-          // Store tokens in localStorage as fallback if cookies are blocked
+          // CRITICAL: Always store tokens in localStorage (cookies work for API calls but may not be readable)
           if (data.tokens) {
-            console.log('[LoginGoogleButton] Storing tokens in localStorage as fallback');
+            console.log('[LoginGoogleButton] Storing tokens in localStorage (required for cross-origin)');
             localStorage.setItem('access_token', data.tokens.accessToken);
             localStorage.setItem('refresh_token', data.tokens.refreshToken);
             localStorage.setItem('user_id', data.user.id);
+            console.log('[LoginGoogleButton] ✅ Tokens stored in localStorage');
+          } else {
+            console.error('[LoginGoogleButton] ⚠️  No tokens in response - this should not happen!');
           }
           
           setUser(data.user);
@@ -44,13 +47,20 @@ export const LoginGoogleButton: React.FC<LoginGoogleButtonProps> = ({
           // Set redirecting state to prevent error flash
           setIsRedirecting(true);
           
-          // Wait a moment for cookies to be set before redirecting
-          console.log('[LoginGoogleButton] Waiting 500ms for cookies to be set...');
-          await new Promise(resolve => setTimeout(resolve, 500));
+          // In production, cookies might not be readable via document.cookie (HttpOnly or cross-origin)
+          // But they're still being sent automatically. localStorage is our primary auth source.
+          console.log('[LoginGoogleButton] Cookies check (may be empty due to HttpOnly/cross-origin):', document.cookie);
+          console.log('[LoginGoogleButton] localStorage tokens:', {
+            access_token: !!localStorage.getItem('access_token'),
+            refresh_token: !!localStorage.getItem('refresh_token'),
+            user_id: !!localStorage.getItem('user_id'),
+          });
           
-          console.log('[LoginGoogleButton] Cookies after wait:', document.cookie);
+          // Small delay to ensure localStorage is set
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
           console.log('[LoginGoogleButton] Redirecting to /dashboard...');
-          // Redirect (cookies should be set by backend response, with localStorage as fallback)
+          // Redirect - dashboard will use localStorage for auth if cookies aren't readable
           window.location.href = '/dashboard';
         } else if (!data) {
           // Login failed but didn't throw - error notification shown by api.client
