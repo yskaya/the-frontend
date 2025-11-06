@@ -275,23 +275,25 @@ export function PayrollDetailsDialog({
                         )
                       : null;
 
-                    const isSelected = selectedTransaction && (
+                    const isSelected = !!(selectedTransaction && (
                       (selectedTransaction.hash === recipient.transactionId) ||
                       (selectedTransaction.id === recipient.transactionId)
-                    );
+                    ));
+
+                    const isOpen = !!(isSelected && transaction);
 
                     return (
-                      <Sheet 
-                        key={recipient.id} 
-                        open={isSelected && !!transaction}
-                        onOpenChange={(open) => {
-                          if (!open) {
-                            setSelectedTransaction(null);
-                          } else if (open && transaction) {
-                            setSelectedTransaction({ hash: transaction.hash, id: transaction.id });
-                          }
-                        }}
-                      >
+                       <Sheet 
+                         key={recipient.id} 
+                         open={isOpen}
+                         onOpenChange={(open) => {
+                           if (!open) {
+                             setSelectedTransaction(null);
+                           } else if (open && transaction) {
+                             setSelectedTransaction({ hash: transaction.hash, id: transaction.id });
+                           }
+                         }}
+                       >
                         <div 
                           className="flex justify-between gap-4 cursor-pointer hover:bg-white/5 rounded-lg transition-colors w-full"
                           style={{ padding: '6px 12px', margin: '0 -12px', alignItems: 'center' }}
