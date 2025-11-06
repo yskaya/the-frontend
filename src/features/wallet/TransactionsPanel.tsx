@@ -1,7 +1,7 @@
 import { ArrowDownLeft, ArrowUpRight, Tag, ExternalLink, FileText, Loader2, Clock, Calendar, RefreshCw, RotateCcw } from "lucide-react";
 import { Badge } from "@/ui/badge";
 import { Button } from "@/ui/button";
-import { Dialog, DialogContent, DialogTrigger } from "@/ui/dialog";
+import { Sheet, SheetContent, SheetTrigger } from "@/ui/sheet";
 import { TransactionDetailsDialog } from "./TransactionDetailsDialog";
 import { useTransactions, useRefreshTransactions, useSyncTransactions } from "./useWallet";
 import type { Transaction } from "./wallet.types";
@@ -49,20 +49,26 @@ export function TransactionsPanel() {
     <div className="transactions-panel-wrapper">
       <div className="transactions-panel-container">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <h2 className="transactions-history-heading">
-            Transactions history
+        <div className="flex items-center gap-2">
+          <h2 className="transactions-history-heading flex items-center gap-2">
+            {!isLoading && transactions ? (
+              <>
+                <span className="text-white">{transactions.length}</span> Transactions
+              </>
+            ) : (
+              'Transactions'
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleReset}
+              disabled={syncTransactions.isPending}
+              className="text-white hover:text-white hover:bg-white/10"
+              title="Reset and sync transactions"
+            >
+              <RotateCcw className="h-4 w-4" />
+            </Button>
           </h2>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleReset}
-            disabled={syncTransactions.isPending}
-            className="text-white hover:text-white hover:bg-white/10"
-            title="Reset and sync transactions"
-          >
-            <RotateCcw className="h-4 w-4" />
-          </Button>
         </div>
 
       {/* Loading State */}
@@ -92,8 +98,8 @@ export function TransactionsPanel() {
       {!isLoading && !error && transactions && transactions.length > 0 && (
         <div className="flex-1 overflow-y-auto transaction-list-container">
           {transactions.map((tx) => (
-            <Dialog key={tx.id}>
-              <DialogTrigger asChild>
+            <Sheet key={tx.id}>
+              <SheetTrigger asChild>
                 <button className="transaction-item-button">
                   {/* Icon */}
                   <div
@@ -144,11 +150,14 @@ export function TransactionsPanel() {
                     </p>
                   </div>
                 </button>
-              </DialogTrigger>
-              <DialogContent aria-describedby={undefined}>
+              </SheetTrigger>
+              <SheetContent 
+                side="bottom" 
+                className="w-full max-w-[700px] mx-auto h-full max-h-screen overflow-hidden bg-transparent border-0 p-0"
+              >
                 <TransactionDetailsDialog transaction={tx} />
-              </DialogContent>
-            </Dialog>
+              </SheetContent>
+            </Sheet>
           ))}
         </div>
       )}

@@ -3,14 +3,15 @@ import { requireAuth, type User } from '@/features/auth';
 import { GetServerSideProps } from 'next';
 import { queryClient } from '@/lib';
 import { useWallet, useCreateWallet, useRefreshWallet, useSyncTransactions } from '@/features/wallet';
-import { Wallet, Users, Send, Share2, LogOut, Plus, Copy, RefreshCw } from 'lucide-react';
+import { Wallet, Users, Send, Share2, LogOut, Plus, Copy, RefreshCw, Calendar } from 'lucide-react';
 import { Button } from '@/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/ui/sheet';
+import { Avatar, AvatarFallback } from '@/ui/avatar';
 import { Dialog, DialogContent } from '@/ui/dialog';
 import { LogoutButton } from '@/components/LogoutButton';
 import { ContactsPanel } from '@/features/contacts';
 import { TransactionsPanel, SendCryptoDialog, ReceiveCryptoDialog } from '@/features/wallet';
-import { PayrollDialog, ScheduledPaymentsPanel, CompletedPayrollsPanel } from '@/features/scheduled-payments';
+import { PayrollDialog, ScheduledPaymentsPanel, CompletedPayrollsPanel, PayrollsToSignPanel, PayrollDetailsDialog, PayrollsPanel } from '@/features/scheduled-payments';
 import { toast } from 'sonner';
 
 
@@ -26,6 +27,8 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
   const [sendOpen, setSendOpen] = useState(false);
   const [sendRecipient, setSendRecipient] = useState<{ address: string; name: string } | null>(null);
   const [contactsOpen, setContactsOpen] = useState(false);
+  const [payrollsOpen, setPayrollsOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [isClientAuthValid, setIsClientAuthValid] = useState<boolean | null>(null);
   const [clientUser, setClientUser] = useState<User | null>(initialUser);
   
@@ -272,7 +275,9 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
 
   const walletAddress = wallet?.address || "";
   const balance = wallet?.balance || "0";
-  const balanceUSD = wallet?.balanceUSD || "0";
+  // Calculate USD value using same conversion rate as other places (3243.0)
+  const ETH_PRICE = 3243.0;
+  const balanceUSD = (parseFloat(balance) * ETH_PRICE).toFixed(2);
 
   const copyAddress = () => {
     if (walletAddress) {
@@ -286,55 +291,111 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
       {/* Modern Minimal Header */}
       <header className="border-b border-white/10 bg-gradient-to-b from-zinc-900/50 to-black/50 backdrop-blur-xl sticky top-0 z-10">
         <div className="max-w-[1200px] mx-auto px-6 py-4">
-          <div className="flex items-center gap-4">
-            {/* Logo */}
-            <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-purple-500 via-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
-              <Wallet className="h-6 w-6 text-white" />
+          <div className="flex items-center justify-between">
+            {/* Left - Menu */}
+            <div className="flex gap-3">
+              <Sheet open={payrollsOpen} onOpenChange={setPayrollsOpen}>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`h-9 px-3 rounded-full border gap-2 transition-all ${
+                      payrollsOpen 
+                        ? 'bg-black text-white border-black' 
+                        : 'bg-white/5 hover:bg-white/10 text-white border-white/10'
+                    }`}
+                  >
+                    <span className="hidden sm:inline text-sm">Payrolls</span>
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-full sm:w-[500px] min-w-[300px] h-screen overflow-y-auto bg-[rgba(20,0,35,0.95)] border-white/10 p-0">
+                  <PayrollsPanel />
+                </SheetContent>
+              </Sheet>
             </div>
-            {/* Title & Email */}
-            <div className="flex flex-col gap-1">
-              <h1 className="text-xl font-bold text-white">PayPay</h1>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400 truncate max-w-[250px]">
-                  {user?.email || ''}
-                </span>
-                <LogoutButton 
-                  className="text-xs text-red-400 hover:text-red-300 transition-colors cursor-pointer flex items-center gap-1"
-                >
-                  <LogOut className="h-3 w-3" />
-                  exit
-                </LogoutButton>
+
+            {/* Center - PayPay Logo */}
+            <div className="flex-1 flex justify-center">
+              <div className="paypay-logo-container" style={{ fontSize: '27px' }}>
+                <span className="text-white">pay</span>
+                <span className="paypay-logo-purple">pay</span>
               </div>
             </div>
+
+            {/* Right - Avatar */}
+            <Sheet open={userMenuOpen} onOpenChange={setUserMenuOpen}>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 rounded-full p-0 hover:bg-white/10"
+                >
+                  <Avatar className="h-10 w-10">
+                    <AvatarFallback className="bg-white/10 text-white border border-white/20">
+                      {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </SheetTrigger>
+                     <SheetContent side="right" className="w-full sm:w-[500px] min-w-[300px] bg-[rgba(20,0,35,0.95)] border-white/10">
+                       <div className="space-y-6 p-8">
+                         {/* User Info */}
+                         <div className="flex flex-col items-center gap-4 pt-8">
+                           <Avatar className="h-20 w-20">
+                             <AvatarFallback className="bg-white/10 text-white text-2xl border-2 border-white/20">
+                               {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                             </AvatarFallback>
+                           </Avatar>
+                           <div className="text-center">
+                             <p className="text-white font-semibold text-lg">
+                               {user?.firstName && user?.lastName 
+                                 ? `${user.firstName} ${user.lastName}`
+                                 : user?.email || 'User'
+                               }
+                             </p>
+                             <p className="text-gray-400 text-sm mt-1">
+                               {user?.email || ''}
+                             </p>
+                           </div>
+                         </div>
+
+                         {/* Separator */}
+                         <div className="border-t border-white/10"></div>
+
+                         {/* Contacts Link */}
+                         <Sheet open={contactsOpen} onOpenChange={setContactsOpen}>
+                           <SheetTrigger asChild>
+                             <Button
+                               variant="ghost"
+                               className="w-full justify-start text-white hover:bg-white/10 transition-colors cursor-pointer flex items-center gap-2 px-4 py-3 rounded-lg"
+                             >
+                               <Users className="h-4 w-4" />
+                               Contacts
+                             </Button>
+                           </SheetTrigger>
+                           <SheetContent side="right" className="w-full sm:w-[500px] min-w-[300px] right-[500px] h-screen overflow-y-auto bg-[rgba(20,0,35,0.95)] border-white/10 p-0">
+                             <ContactsPanel onSendTo={handleOpenSendTo} />
+                           </SheetContent>
+                         </Sheet>
+
+                         {/* Separator */}
+                         <div className="border-t border-white/10"></div>
+
+                         {/* Actions */}
+                         <div className="space-y-2 flex justify-center">
+                           <LogoutButton 
+                             className="text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors cursor-pointer flex items-center gap-2 px-4 py-3 rounded-lg"
+                           >
+                             <LogOut className="h-4 w-4" />
+                             Exit
+                           </LogoutButton>
+                         </div>
+                       </div>
+                     </SheetContent>
+            </Sheet>
           </div>
         </div>
       </header>
-
-      {/* Fixed Menu Buttons - Always on top, within container */}
-      <div className="fixed top-4 left-0 right-0 z-[100] pointer-events-none">
-        <div className="max-w-[1200px] mx-auto px-6 flex justify-end gap-3 pointer-events-auto">
-          {/* Contacts */}
-          <Sheet open={contactsOpen} onOpenChange={setContactsOpen}>
-            <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className={`h-9 px-3 rounded-full border gap-2 transition-all ${
-                  contactsOpen 
-                    ? 'bg-black text-white border-black' 
-                    : 'bg-white/5 hover:bg-white/10 text-white border-white/10'
-                }`}
-              >
-                <Users className="h-4 w-4" />
-                <span className="hidden sm:inline text-sm">Contacts</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-1/2">
-              <ContactsPanel onSendTo={handleOpenSendTo} />
-            </SheetContent>
-          </Sheet>
-        </div>
-      </div>
 
       {/* Main Content */}
       <main className="max-w-[1200px] mx-auto px-6 py-8">
@@ -366,101 +427,91 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
             </div>
           </div>
         ) : (
-          <div className="wallet-box">
-            {/* Left Part */}
-            <div className="wallet-box-left">
-              {/* Wallet Address */}
-              <div className="flex items-center gap-2">
-                <code className="text-xs text-gray-400 font-mono">
-                  {walletAddress.slice(0, 10)}...{walletAddress.slice(-8)}
-                </code>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={copyAddress}
-                  className="h-6 w-6 rounded-md bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white"
-                >
-                  <Copy className="h-3 w-3" />
-                </Button>
-              </div>
-
-              {/* Balance */}
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <p className="text-5xl font-bold text-white">
-                    ${balanceUSD}{" "}
-                    <span className="text-3xl text-gray-400">USD</span>
-                  </p>
-                  {/* Refresh Button */}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={refreshWallet}
-                    className="h-6 w-6 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/20"
-                    title="Refresh wallet"
-                  >
-                    <RefreshCw className="h-3 w-3" />
-                  </Button>
+          <div className="grid grid-cols-2 gap-6">
+            {/* Left Half - Wallet */}
+            <div className="wallet-box">
+              <div className="flex flex-col gap-6">
+                {/* Wallet Address with Network */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <code className="text-xs text-gray-400 font-mono">
+                      {walletAddress.slice(0, 10)}...{walletAddress.slice(-8)}
+                    </code>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={copyAddress}
+                      className="h-6 w-6 rounded-md bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white"
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  {/* Network - Aligned Right */}
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
+                    <div className="h-2 w-2 rounded-full bg-green-500" />
+                    <p className="text-xs font-medium text-white">{wallet?.network || 'Sepolia'}</p>
+                  </div>
                 </div>
-                <p className="text-xl text-gray-400">
-                  {balance}{" "}
-                  <span className="text-lg text-gray-500">ETH</span>
-                </p>
-              </div>
 
-              {/* Action Buttons */}
-              <div className="grid grid-cols-3 gap-3">
-                <Button
-                  onClick={() => setSendOpen(true)}
-                  className="h-12 gap-2 bg-white text-black hover:bg-gray-100 rounded-xl font-semibold"
-                >
-                  <Send className="h-5 w-5" />
-                  Send
-                </Button>
-                <Button
-                  onClick={() => setReceiveOpen(true)}
-                  className="h-12 gap-2 bg-white/10 text-white hover:bg-white/20 border border-white/30 rounded-xl font-semibold"
-                >
-                  <Share2 className="h-5 w-5" />
-                  Receive
-                </Button>
-                <PayrollDialog 
-                  buttonClassName="h-12 gap-2 bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-white hover:from-purple-500/30 hover:to-blue-500/30 border border-purple-500/50 rounded-xl font-semibold"
-                  buttonText="Schedule"
-                />
+                {/* Balance */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-5xl font-bold text-white">
+                      ${balanceUSD}{" "}
+                      <span className="text-3xl text-gray-400">USD</span>
+                    </p>
+                    {/* Refresh Button */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={refreshWallet}
+                      className="h-6 w-6 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/20"
+                      title="Refresh wallet"
+                    >
+                      <RefreshCw className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  <p className="text-xl text-gray-400">
+                    {balance}{" "}
+                    <span className="text-lg text-gray-500">ETH</span>
+                  </p>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="grid grid-cols-3 gap-3">
+                  <Button
+                    onClick={() => setSendOpen(true)}
+                    className="h-12 gap-2 bg-white text-black hover:bg-gray-100 rounded-xl font-semibold"
+                  >
+                    <Send className="h-5 w-5" />
+                    Send
+                  </Button>
+                  <Button
+                    onClick={() => setReceiveOpen(true)}
+                    className="h-12 gap-2 bg-white/10 text-white hover:bg-white/20 border border-white/30 rounded-xl font-semibold"
+                  >
+                    <Share2 className="h-5 w-5" />
+                    Receive
+                  </Button>
+                  <PayrollDialog 
+                    buttonClassName="h-12 gap-2 bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-white hover:from-purple-500/30 hover:to-blue-500/30 border border-purple-500/50 rounded-xl font-semibold"
+                    buttonText="Schedule"
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Right Part - Network Only */}
-            <div className="wallet-box-right">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
-                <div className="h-2 w-2 rounded-full bg-green-500" />
-                <p className="text-xs font-medium text-white">{wallet?.network || 'Sepolia'}</p>
-              </div>
+            {/* Right Half - Payrolls to Sign */}
+            <div>
+              <PayrollsToSignPanel />
             </div>
           </div>
         )}
 
-        {/* Scheduled and To Sign - Two columns */}
+        {/* Transactions - Below */}
         {wallet && (
-          <div className="mt-8 space-y-6">
-            {/* Top Row: Scheduled and To Sign side by side */}
-            <div className="grid grid-cols-2 gap-6">
-              {/* Left Column - Scheduled */}
-              <div>
-                <ScheduledPaymentsPanel />
-              </div>
-
-              {/* Right Column - To Sign */}
-              <div>
-                <CompletedPayrollsPanel />
-              </div>
-            </div>
-
-            {/* Bottom Row: Transactions full width */}
-            <div>
-              <TransactionsPanel />
-            </div>
+          <div className="mt-8">
+            <TransactionsPanel />
           </div>
         )}
       </main>

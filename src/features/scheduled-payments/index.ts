@@ -34,5 +34,8 @@ export { ScheduledPaymentsList } from './components/ScheduledPaymentsList';
 export { ScheduledPaymentsPanel } from './components/ScheduledPaymentsPanel';
 export { ScheduledPaymentDetailsDialog } from './components/ScheduledPaymentDetailsDialog';
 export { CompletedPayrollsPanel } from './components/CompletedPayrollsPanel';
+export { PayrollsToSignPanel } from './components/PayrollsToSignPanel';
 export { PayrollDialog } from './components/PayrollDialog';
+export { PayrollDetailsDialog } from './components/PayrollDetailsDialog';
+export { PayrollsPanel } from './components/PayrollsPanel';
 

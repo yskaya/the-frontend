@@ -7,6 +7,7 @@ import { Payroll } from "../types";
 import { toast } from "sonner";
 import { useState } from "react";
 import { TransactionStatusIcon } from "@/ui/TransactionStatusIcon";
+import { PayrollDetailsDialog } from "./PayrollDetailsDialog";
 
 // Format date as "May 26, 2025"
 function formatDate(date: string | Date): string {
@@ -40,10 +41,14 @@ export function ScheduledPaymentsPanel() {
   const createPayrollMutation = useCreatePayroll();
   const [selectedPayroll, setSelectedPayroll] = useState<Payroll | null>(null);
 
-  // Filter to show scheduled, processing, cancelled, and failed payrolls (not completed)
-  const scheduledPayrolls = allPayrolls?.filter(
-    (p) => p.status === 'scheduled' || p.status === 'processing' || p.status === 'cancelled' || p.status === 'failed'
-  ) || [];
+  // Show all payrolls (scheduled, processing, cancelled, failed, completed)
+  // Sort by scheduling date (scheduledFor) - nearest scheduled date first
+  const payrolls = (allPayrolls || [])
+    .sort((a, b) => {
+      const dateA = new Date(a.scheduledFor).getTime();
+      const dateB = new Date(b.scheduledFor).getTime();
+      return dateA - dateB; // Nearest scheduled date first (ascending)
+    });
 
   const handleCancel = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation(); // Prevent opening dialog
@@ -104,7 +109,13 @@ export function ScheduledPaymentsPanel() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <h2 className="scheduled-payrolls-heading">
-            Scheduled Payrolls {!isLoading && scheduledPayrolls && `(${scheduledPayrolls.length})`}
+            {!isLoading && payrolls ? (
+              <>
+                <span className="text-white">{payrolls.length}</span> Payrolls
+              </>
+            ) : (
+              'Payrolls'
+            )}
           </h2>
           <Button
             variant="ghost"
@@ -132,17 +143,17 @@ export function ScheduledPaymentsPanel() {
       )}
 
       {/* Empty State */}
-      {!isLoading && !error && (!scheduledPayrolls || scheduledPayrolls.length === 0) && (
+      {!isLoading && !error && (!payrolls || payrolls.length === 0) && (
         <div className="placeholder">
-          <p className="text-gray-400">No scheduled payrolls</p>
+          <p className="text-gray-400">No payrolls</p>
           <p className="text-gray-500 text-sm mt-1">Create a payroll to get started</p>
         </div>
       )}
 
-      {/* Scheduled Payrolls List */}
-      {!isLoading && !error && scheduledPayrolls && scheduledPayrolls.length > 0 && (
+      {/* Payrolls List */}
+      {!isLoading && !error && payrolls && payrolls.length > 0 && (
         <div className="scheduled-payrolls-list-container">
-          {scheduledPayrolls.map((payroll) => {
+          {payrolls.map((payroll) => {
             const totalAmount = payroll.recipients.reduce((sum, r) => sum + parseFloat(r.amount || '0'), 0);
             const completedCount = payroll.recipients.filter(r => r.status === 'completed').length;
             const pendingCount = payroll.recipients.filter(r => r.status === 'pending').length;
@@ -158,13 +169,13 @@ export function ScheduledPaymentsPanel() {
                     {/* Icon */}
                     <TransactionStatusIcon
                       status={
-                        payroll.status === 'processing'
-                          ? 'pending'
-                          : payroll.status === 'failed'
-                          ? 'failed'
-                          : payroll.status === 'cancelled'
-                          ? 'failed'
-                          : 'scheduled'
+                        payroll.status === 'completed'
+                          ? 'sent' // Green icon for completed
+                          : payroll.status === 'processing'
+                          ? 'pending' // Orange icon for processing
+                          : payroll.status === 'failed' || payroll.status === 'cancelled'
+                          ? 'failed' // Red icon for failed/cancelled
+                          : 'scheduled' // Grey icon for scheduled
                       }
                     />
 
@@ -185,12 +196,6 @@ export function ScheduledPaymentsPanel() {
                           <Calendar className="h-3 w-3" />
                           {formatDateTime(payroll.scheduledFor)}
                         </span>
-                        {payroll.note && (
-                          <>
-                            <span>•</span>
-                            <span className="truncate">{payroll.note}</span>
-                          </>
-                        )}
                       </div>
                       {processingCount > 0 && (
                         <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
@@ -211,97 +216,20 @@ export function ScheduledPaymentsPanel() {
                     </div>
                   </div>
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl p-0">
+                <DialogContent 
+                  aria-describedby={undefined} 
+                  className="!border-0 !shadow-none !p-0 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right data-[state=closed]:!zoom-out-0 data-[state=open]:!zoom-in-0 !fixed !right-0 !left-auto !top-0 !bottom-0 !w-full !max-w-[700px] !h-screen !max-h-screen rounded-none transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500 overflow-hidden"
+                >
                   {selectedPayroll && (
-                    <div className="p-6 space-y-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="text-xl font-semibold text-black">{selectedPayroll.name}</h3>
-                        <Badge
-                          variant="outline"
-                          className={`text-xs ${
-                            selectedPayroll.status === 'cancelled' || selectedPayroll.status === 'failed'
-                              ? 'border-red-500/50 text-red-400 bg-red-500/10'
-                              : 'border-purple-500/50 text-purple-400 bg-purple-500/10'
-                          }`}
-                        >
-                          {selectedPayroll.status}
-                        </Badge>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="text-sm text-gray-400">Scheduled for: <span className="text-black">{formatDateTime(selectedPayroll.scheduledFor)}</span></p>
-                        {selectedPayroll.note && <p className="text-sm text-gray-400">Note: <span className="text-black">{selectedPayroll.note}</span></p>}
-                      </div>
-                      <div className="border-t border-white/10 pt-4">
-                        <h4 className="text-sm font-semibold text-black mb-2">Recipients ({selectedPayroll.recipients.length})</h4>
-                        <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                          {selectedPayroll.recipients.map((recipient) => (
-                            <div key={recipient.id} className="p-3 bg-white/5 rounded-lg">
-                              <div className="flex items-center justify-between">
-                                <div className="flex-1">
-                                  <p className="text-sm font-medium text-black">{recipient.recipientName || recipient.recipientAddress.slice(0, 10)}...</p>
-                                  <p className="text-xs text-gray-400 font-mono">{recipient.recipientAddress}</p>
-                                </div>
-                                <div className="text-right">
-                                  <p className="text-sm font-semibold text-black">{recipient.amount} ETH</p>
-                                  <Badge variant="outline" className="text-xs mt-1">
-                                    {recipient.status}
-                                  </Badge>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      {(selectedPayroll.status === 'scheduled' || selectedPayroll.status === 'failed' || selectedPayroll.status === 'cancelled') && (
-                        <div className="border-t border-white/10 pt-4 space-y-2">
-                          {selectedPayroll.status === 'scheduled' && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleCancel(e, selectedPayroll.id);
-                              }}
-                              disabled={cancelMutation.isPending}
-                              className="w-full h-10 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                            >
-                              <X className="h-4 w-4 mr-2" />
-                              Cancel Payroll
-                            </Button>
-                          )}
-                          {(selectedPayroll.status === 'failed' || selectedPayroll.status === 'cancelled') && (
-                            <div className="space-y-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRestart(selectedPayroll);
-                                }}
-                                disabled={createPayrollMutation.isPending}
-                                className="w-full h-10 text-sm text-green-400 hover:text-green-300 hover:bg-green-500/10"
-                              >
-                                <RefreshCw className="h-4 w-4 mr-2" />
-                                Restart Payroll
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDelete(selectedPayroll.id);
-                                }}
-                                disabled={deleteMutation.isPending}
-                                className="w-full h-10 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete Payroll
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
+                    <PayrollDetailsDialog 
+                      payroll={selectedPayroll}
+                      onCancel={selectedPayroll.status === 'scheduled' ? (id) => handleCancel({} as React.MouseEvent, id) : undefined}
+                      onRestart={(selectedPayroll.status === 'failed' || selectedPayroll.status === 'cancelled') ? handleRestart : undefined}
+                      onDelete={(selectedPayroll.status === 'failed' || selectedPayroll.status === 'cancelled') ? handleDelete : undefined}
+                      isCancelling={cancelMutation.isPending}
+                      isRestarting={createPayrollMutation.isPending}
+                      isDeleting={deleteMutation.isPending}
+                    />
                   )}
                 </DialogContent>
               </Dialog>

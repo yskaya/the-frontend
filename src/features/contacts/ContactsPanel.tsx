@@ -157,71 +157,73 @@ export function ContactsPanel({ onSendTo }: ContactsPanelProps) {
     c.address.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  return (
-    <div className="space-y-4">
+        return (
+          <div className="space-y-6 p-8">
       {/* Header */}
       <div>
-        <div className="flex items-center gap-2 mb-1">
-          <Users className="h-5 w-5 text-black" />
-          <h2 className="text-black text-xl font-semibold">Contacts</h2>
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-white" />
+            <h2 className="text-white text-xl font-semibold">Contacts</h2>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 border-white/20 text-white bg-white/10"
+            onClick={() => setShowAddForm(!showAddForm)}
+          >
+            <Plus className="h-4 w-4" />
+            Add Contact
+          </Button>
         </div>
-        <p className="text-gray-600 text-sm">Manage saved wallet addresses</p>
-        <Button
-          variant="outline"
-          size="sm"
-          className="mt-3 gap-2 border-gray-300 text-black hover:bg-gray-100"
-          onClick={() => setShowAddForm(!showAddForm)}
-        >
-          <Plus className="h-4 w-4" />
-          Add Contact
-        </Button>
+        <p className="text-gray-400 text-sm">Manage saved wallet addresses</p>
       </div>
 
       {/* Search Bar */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
         <Input
           placeholder="Search contacts..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9 bg-gray-50 border-gray-300 text-black placeholder:text-gray-400"
+          className="pl-11 pr-4 py-2.5 bg-transparent border-0 border-b border-white/10 rounded-none text-white placeholder:text-gray-500 focus:border-white/30 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 transition-colors"
         />
       </div>
 
       {/* Add Contact Form */}
       {showAddForm && (
         <>
-          <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 space-y-3">
+          <div className="bg-white/5 rounded-lg p-4 border border-white/10 space-y-3">
             <Input
               placeholder="Contact name (optional)"
               value={newContactName}
               onChange={(e) => setNewContactName(e.target.value)}
-              className="bg-white border-gray-300 text-black placeholder:text-gray-400"
+              className="bg-white/5 border-white/10 text-white placeholder:text-gray-400"
             />
             <Input
               placeholder="Email address *"
               value={newContactEmail}
               onChange={(e) => setNewContactEmail(e.target.value)}
-              className="bg-white border-gray-300 text-black placeholder:text-gray-400"
+              className="bg-white/5 border-white/10 text-white placeholder:text-gray-400"
               type="email"
             />
             <Input
               placeholder="Wallet address (0x...) *"
               value={newContactAddress}
               onChange={(e) => setNewContactAddress(e.target.value)}
-              className="bg-white border-gray-300 text-black placeholder:text-gray-400"
+              className="bg-white/5 border-white/10 text-white placeholder:text-gray-400"
             />
             <Input
               placeholder="Note (optional)"
               value={newContactNote}
               onChange={(e) => setNewContactNote(e.target.value)}
-              className="bg-white border-gray-300 text-black placeholder:text-gray-400"
+              className="bg-white/5 border-white/10 text-white placeholder:text-gray-400"
             />
             <div className="flex gap-2">
               <Button
                 variant="default"
                 size="sm"
-                className="flex-1 bg-black text-white hover:bg-gray-800"
+                className="flex-1 bg-white text-black hover:bg-gray-200"
                 onClick={handleAddContact}
                 disabled={createContactMutation.isPending}
               >
@@ -230,7 +232,7 @@ export function ContactsPanel({ onSendTo }: ContactsPanelProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className="flex-1 border-gray-300 text-black hover:bg-gray-100"
+                className="flex-1 border-white/20 text-white hover:bg-white/10"
                 onClick={() => {
                   setShowAddForm(false);
                   setNewContactName("");
@@ -242,23 +244,23 @@ export function ContactsPanel({ onSendTo }: ContactsPanelProps) {
               </Button>
             </div>
           </div>
-          <Separator className="bg-gray-200" />
+          <Separator className="bg-white/10" />
         </>
       )}
 
-      {/* Contacts List */}
-      <ScrollArea className="h-[calc(100vh-350px)]">
-        <div className="space-y-2">
+             {/* Contacts List */}
+             <ScrollArea className="h-[calc(100vh-350px)]">
+               <div className="space-y-6" style={{ gap: '24px' }}>
           {isLoading ? (
-            <div className="text-center py-12 text-gray-400">
-              <Users className="h-12 w-12 mx-auto mb-3 opacity-50 animate-pulse" />
-              <p className="text-black font-medium">Loading contacts...</p>
+            <div className="text-left py-12 text-gray-400">
+              <Users className="h-12 w-12 mb-3 opacity-50 animate-pulse" />
+              <p className="text-white font-medium">Loading contacts...</p>
             </div>
           ) : filteredContacts.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">
-              <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p className="text-black font-medium">No contacts found</p>
-              <p className="text-sm">Try adjusting your search</p>
+            <div className="text-left py-12 text-gray-400">
+              <Users className="h-12 w-12 mb-3 opacity-50" />
+              <p className="text-white font-medium">No contacts found</p>
+              <p className="text-sm text-gray-400">Try adjusting your search</p>
             </div>
           ) : (
             filteredContacts.map((contact) => (
@@ -269,14 +271,14 @@ export function ContactsPanel({ onSendTo }: ContactsPanelProps) {
                   setIsEditingNote(false);
                   setEditNote("");
                 }}
-                className="w-full bg-gray-50 rounded-lg p-3 border border-gray-200 hover:bg-gray-100 hover:border-gray-300 transition-all text-left"
+                className="w-full bg-white/5 rounded-lg p-3 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all text-left"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-black mb-1">
+                    <p className="font-medium text-white mb-1">
                       {contact.name || 'Unnamed Contact'}
                     </p>
-                    <p className="text-xs text-gray-600 mb-1">{contact.email}</p>
+                    <p className="text-xs text-gray-400 mb-1">{contact.email}</p>
                     <code className="text-xs text-gray-500 block truncate">
                       {contact.address.slice(0, 10)}...{contact.address.slice(-8)}
                     </code>
@@ -297,21 +299,21 @@ export function ContactsPanel({ onSendTo }: ContactsPanelProps) {
           setEditNote("");
         }
       }}>
-        <DialogContent>
+        <DialogContent className="bg-[rgba(20,0,35,0.95)] border-white/10">
           {selectedContact && (
-            <div className="bg-white text-black rounded-lg -m-6 max-h-[85vh] min-h-[400px] flex flex-col">
+            <div className="bg-transparent text-white rounded-lg -m-6 max-h-[85vh] min-h-[400px] flex flex-col">
               {/* Fixed Header */}
-              <div className="p-6 pb-4 border-b border-gray-200">
+              <div className="p-6 pb-4 border-b border-white/10">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <h3 className="text-black text-xl font-semibold mb-1">{selectedContact.name}</h3>
-                    <p className="text-gray-600 text-sm">Contact details and actions</p>
+                    <h3 className="text-white text-xl font-semibold mb-1">{selectedContact.name}</h3>
+                    <p className="text-gray-400 text-sm">Contact details and actions</p>
                   </div>
                   {!isEditing && (
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="gap-2 text-black hover:bg-gray-100"
+                      className="gap-2 text-white hover:bg-white/10"
                       onClick={() => handleStartEdit(selectedContact)}
                     >
                       <Edit2 className="h-4 w-4" />
@@ -328,20 +330,20 @@ export function ContactsPanel({ onSendTo }: ContactsPanelProps) {
                   <>
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <p className="text-xs text-gray-500 uppercase tracking-wide">Name</p>
+                        <p className="text-xs text-gray-400 uppercase tracking-wide">Name</p>
                         <Input
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
-                          className="bg-gray-50 border-gray-300 text-black"
+                          className="bg-white/5 border-white/10 text-white"
                           autoFocus
                         />
                       </div>
                       <div className="space-y-2">
-                        <p className="text-xs text-gray-500 uppercase tracking-wide">Email</p>
+                        <p className="text-xs text-gray-400 uppercase tracking-wide">Email</p>
                         <Input
                           value={editEmail}
                           onChange={(e) => setEditEmail(e.target.value)}
-                          className="bg-gray-50 border-gray-300 text-black"
+                          className="bg-white/5 border-white/10 text-white"
                           type="email"
                         />
                       </div>
@@ -349,7 +351,7 @@ export function ContactsPanel({ onSendTo }: ContactsPanelProps) {
 
                     <div className="flex gap-2">
                       <Button
-                        className="flex-1 bg-black text-white hover:bg-gray-800"
+                        className="flex-1 bg-white text-black hover:bg-gray-200"
                         onClick={handleSaveEdit}
                         disabled={updateContactMutation.isPending}
                       >
@@ -357,7 +359,7 @@ export function ContactsPanel({ onSendTo }: ContactsPanelProps) {
                       </Button>
                       <Button
                         variant="outline"
-                        className="flex-1 border-gray-300 text-black hover:bg-gray-100"
+                        className="flex-1 border-white/20 text-white hover:bg-white/10"
                         onClick={handleCancelEdit}
                       >
                         Cancel
@@ -368,7 +370,7 @@ export function ContactsPanel({ onSendTo }: ContactsPanelProps) {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-full gap-2 border-red-300 text-red-600 hover:bg-red-50"
+                      className="w-full gap-2 border-red-500/50 text-red-400 hover:bg-red-500/10"
                       onClick={() => handleDelete(selectedContact.id)}
                       disabled={deleteContactMutation.isPending}
                     >
@@ -380,13 +382,13 @@ export function ContactsPanel({ onSendTo }: ContactsPanelProps) {
                   <>
                     {/* Note - Inline Editable */}
                     {isEditingNote ? (
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <div className="bg-white/5 border border-white/10 rounded-lg p-3">
                         <textarea
                           value={editNote}
                           onChange={(e) => setEditNote(e.target.value)}
                           onKeyDown={handleNoteKeyDown}
                           onBlur={handleSaveNote}
-                          className="w-full bg-transparent text-sm text-blue-800 resize-none border-none outline-none focus:ring-0 p-0"
+                          className="w-full bg-transparent text-sm text-white resize-none border-none outline-none focus:ring-0 p-0 placeholder:text-gray-400"
                           rows={3}
                           autoFocus
                           placeholder="Add a note..."
@@ -394,27 +396,27 @@ export function ContactsPanel({ onSendTo }: ContactsPanelProps) {
                       </div>
                     ) : (
                       <div 
-                        className="bg-blue-50 border border-blue-200 rounded-lg p-3 cursor-pointer hover:bg-blue-100 transition-colors"
+                        className="bg-white/5 border border-white/10 rounded-lg p-3 cursor-pointer hover:bg-white/10 transition-colors"
                         onClick={handleStartEditNote}
                       >
                         {selectedContact.note ? (
-                          <p className="text-sm text-blue-800 whitespace-pre-wrap">{selectedContact.note}</p>
+                          <p className="text-sm text-white whitespace-pre-wrap">{selectedContact.note}</p>
                         ) : (
-                          <p className="text-sm text-blue-600 italic">Click to add a note...</p>
+                          <p className="text-sm text-gray-400 italic">Click to add a note...</p>
                         )}
                       </div>
                     )}
 
                     {/* Email */}
                     <div className="space-y-2">
-                      <p className="text-xs text-gray-500 uppercase tracking-wide">Email</p>
-                      <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                      <p className="text-xs text-gray-400 uppercase tracking-wide">Email</p>
+                      <div className="bg-white/5 rounded-lg p-3 border border-white/10">
                         <div className="flex items-center gap-2">
-                          <code className="text-sm flex-1 text-black font-mono">{selectedContact.email}</code>
+                          <code className="text-sm flex-1 text-white font-mono">{selectedContact.email}</code>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 shrink-0 hover:bg-gray-100"
+                            className="h-6 w-6 shrink-0 hover:bg-white/10 text-white"
                             onClick={() => {
                               navigator.clipboard.writeText(selectedContact.email);
                               toast.success("Email copied");
@@ -428,14 +430,14 @@ export function ContactsPanel({ onSendTo }: ContactsPanelProps) {
 
                     {/* Address */}
                     <div className="space-y-2">
-                      <p className="text-xs text-gray-500 uppercase tracking-wide">Wallet Address</p>
-                      <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                      <p className="text-xs text-gray-400 uppercase tracking-wide">Wallet Address</p>
+                      <div className="bg-white/5 rounded-lg p-3 border border-white/10">
                         <div className="flex items-center gap-2">
-                          <code className="text-sm break-all flex-1 text-black font-mono">{selectedContact.address}</code>
+                          <code className="text-sm break-all flex-1 text-white font-mono">{selectedContact.address}</code>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 shrink-0 hover:bg-gray-100"
+                            className="h-6 w-6 shrink-0 hover:bg-white/10 text-white"
                             onClick={() => {
                               navigator.clipboard.writeText(selectedContact.address);
                               toast.success("Address copied");
@@ -447,12 +449,12 @@ export function ContactsPanel({ onSendTo }: ContactsPanelProps) {
                       </div>
                     </div>
 
-                    <Separator className="bg-gray-200" />
+                    <Separator className="bg-white/10" />
 
                     {/* Actions */}
                     <div className="space-y-2">
                       <Button
-                        className="w-full gap-2 bg-black text-white hover:bg-gray-800"
+                        className="w-full gap-2 bg-white text-black hover:bg-gray-200"
                         onClick={() => handleSendTo(selectedContact)}
                       >
                         <Send className="h-4 w-4" />

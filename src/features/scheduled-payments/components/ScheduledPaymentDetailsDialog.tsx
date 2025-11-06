@@ -238,7 +238,7 @@ export function ScheduledPaymentDetailsDialog({ payment }: ScheduledPaymentDetai
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full gap-2 border-gray-300 text-black hover:bg-gray-100"
+                className="w-full gap-2 border-gray-300 text-black bg-transparent hover:bg-gray-100 hover:border-gray-400 transition-colors"
                 onClick={handleViewOnExplorer}
               >
                 <ExternalLink className="h-4 w-4" />

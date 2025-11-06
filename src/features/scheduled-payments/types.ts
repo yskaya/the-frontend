@@ -51,7 +51,8 @@ export type PayrollStatus =
   | 'processing' // Currently being executed
   | 'completed'  // All recipients processed
   | 'failed'     // Payroll failed
-  | 'cancelled'; // Cancelled by user
+  | 'cancelled'  // Cancelled by user
+  | 'signed';    // Signed and ready to execute
 
 export type PayrollRecipientStatus = 
   | 'pending'    // Waiting to be executed
