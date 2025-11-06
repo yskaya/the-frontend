@@ -41,8 +41,82 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
     // Otherwise, check localStorage for tokens (cookies blocked or not set yet)
     console.log('[Dashboard] No server-side user, checking localStorage...');
     
-    // CRITICAL: Wait a moment for localStorage to be set (especially after redirect from login)
-    // This handles the case where we just logged in and redirected
+    // Helper function to validate tokens and set user
+    async function validateAndSetUser(accessToken: string, userId: string): Promise<boolean> {
+      console.log('[Dashboard] ✅ Tokens found in localStorage, validating...');
+      console.log('[Dashboard] Token preview:', accessToken.substring(0, 50) + '...');
+      try {
+        const { validate } = await import('@/features/auth/auth.api');
+        const user = await validate();
+        console.log('[Dashboard] Validate returned:', {
+          hasUser: !!user,
+          userId: user?.id,
+          userEmail: user?.email,
+        });
+        if (user && user.id) {
+          console.log('[Dashboard] ✅ Client-side auth validated, user:', user.email);
+          setClientUser(user);
+          setIsClientAuthValid(true);
+          return true; // Success
+        } else {
+          console.log('[Dashboard] ❌ Client-side auth validation returned invalid user');
+          console.log('[Dashboard] User object:', user);
+          return false; // Failed
+        }
+      } catch (error: any) {
+        console.error('[Dashboard] ❌ Client-side auth validation error:', error);
+        console.error('[Dashboard] Error details:', {
+          message: error?.message,
+          status: error?.response?.status,
+          data: error?.response?.data,
+        });
+        // If it's a 401/403, tokens are invalid - don't retry
+        if (error?.response?.status === 401 || error?.response?.status === 403) {
+          console.log('[Dashboard] Token is invalid (401/403), redirecting to login');
+          setIsClientAuthValid(false);
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 100);
+          return false; // Failed and redirecting
+        }
+        // For other errors, retry
+        console.log('[Dashboard] Retrying validation...');
+        return false; // Failed, will retry
+      }
+    }
+    
+    // CRITICAL: Check localStorage IMMEDIATELY first (before any delays)
+    // localStorage persists across redirects, so it should be available immediately
+    const checkAuthImmediately = async () => {
+      const accessToken = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+      const userId = typeof window !== 'undefined' ? localStorage.getItem('user_id') : null;
+      
+      console.log('[Dashboard] IMMEDIATE localStorage check:', {
+        hasAccessToken: !!accessToken,
+        hasUserId: !!userId,
+        accessTokenPreview: accessToken ? accessToken.substring(0, 20) + '...' : null,
+        userIdPreview: userId || null,
+        allLocalStorageKeys: typeof window !== 'undefined' ? Object.keys(localStorage) : [],
+      });
+      
+      if (accessToken && userId) {
+        // Found tokens immediately - validate them right away
+        console.log('[Dashboard] ✅ Tokens found immediately in localStorage, validating...');
+        const success = await validateAndSetUser(accessToken, userId);
+        return success; // Return true if successful
+      }
+      return false; // Not found, will retry
+    };
+    
+    // Try immediate check first
+    checkAuthImmediately().then((success) => {
+      if (success) {
+        // Success - user is set, component will re-render
+        return;
+      }
+    });
+    
+    // If immediate check failed, retry with delays (for race conditions)
     const checkAuth = async () => {
       // CRITICAL: Increase wait time to ensure localStorage is fully populated after redirect
       // Also check multiple times to handle race conditions
@@ -59,47 +133,13 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
           userIdPreview: userId || null,
         });
         
-          if (accessToken && userId) {
+        if (accessToken && userId) {
           // Found tokens, validate them
-          console.log('[Dashboard] ✅ Tokens found in localStorage, validating...');
-          console.log('[Dashboard] Token preview:', accessToken.substring(0, 50) + '...');
-          try {
-            const { validate } = await import('@/features/auth/auth.api');
-            const user = await validate();
-            console.log('[Dashboard] Validate returned:', {
-              hasUser: !!user,
-              userId: user?.id,
-              userEmail: user?.email,
-            });
-            if (user && user.id) {
-              console.log('[Dashboard] ✅ Client-side auth validated, user:', user.email);
-              setClientUser(user);
-              setIsClientAuthValid(true);
-              return; // Success - exit function
-            } else {
-              console.log('[Dashboard] ❌ Client-side auth validation returned invalid user');
-              console.log('[Dashboard] User object:', user);
-              // Continue to next attempt
-            }
-          } catch (error: any) {
-            console.error('[Dashboard] ❌ Client-side auth validation error:', error);
-            console.error('[Dashboard] Error details:', {
-              message: error?.message,
-              status: error?.response?.status,
-              data: error?.response?.data,
-            });
-            // If it's a 401/403, tokens are invalid - don't retry
-            if (error?.response?.status === 401 || error?.response?.status === 403) {
-              console.log('[Dashboard] Token is invalid (401/403), redirecting to login');
-              setIsClientAuthValid(false);
-              setTimeout(() => {
-                window.location.href = '/login';
-              }, 100);
-              return;
-            }
-            // For other errors, retry
-            console.log('[Dashboard] Retrying validation...');
+          const success = await validateAndSetUser(accessToken, userId);
+          if (success) {
+            return; // Success - exit function
           }
+          // Continue to next attempt if validation failed
         }
       }
       
