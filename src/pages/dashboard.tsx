@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 
 
 interface DashboardProps {
-  initialUser: User;
+  initialUser: User | null;
 }
 
 /**
@@ -26,10 +26,66 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
   const [sendOpen, setSendOpen] = useState(false);
   const [sendRecipient, setSendRecipient] = useState<{ address: string; name: string } | null>(null);
   const [contactsOpen, setContactsOpen] = useState(false);
+  const [isClientAuthValid, setIsClientAuthValid] = useState<boolean | null>(null);
+  const [clientUser, setClientUser] = useState<User | null>(initialUser);
   
-  const { data: wallet, isLoading: walletLoading } = useWallet(initialUser.id);
-  const createWalletMutation = useCreateWallet(initialUser.id);
-  const refreshWallet = useRefreshWallet(initialUser.id);
+  // Client-side auth validation fallback (for when cookies are blocked)
+  useEffect(() => {
+    // If we have initialUser from server-side, we're good
+    if (initialUser && initialUser.id) {
+      console.log('[Dashboard] Using server-side authenticated user');
+      setIsClientAuthValid(true);
+      return;
+    }
+    
+    // Otherwise, check localStorage for tokens (cookies blocked)
+    console.log('[Dashboard] No server-side user, checking localStorage...');
+    const accessToken = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+    const userId = typeof window !== 'undefined' ? localStorage.getItem('user_id') : null;
+    
+    if (!accessToken || !userId) {
+      console.log('[Dashboard] No tokens in localStorage, redirecting to login');
+      setIsClientAuthValid(false);
+      window.location.href = '/login';
+      return;
+    }
+    
+    // Validate token with API call
+    console.log('[Dashboard] Validating token from localStorage...');
+    const validateAuth = async () => {
+      try {
+        const { validate } = await import('@/features/auth/auth.api');
+        const user = await validate();
+        if (user) {
+          console.log('[Dashboard] ✅ Client-side auth validated, user:', user.email);
+          setClientUser(user);
+          setIsClientAuthValid(true);
+        } else {
+          console.log('[Dashboard] ❌ Client-side auth validation failed');
+          setIsClientAuthValid(false);
+          window.location.href = '/login';
+        }
+      } catch (error) {
+        console.error('[Dashboard] ❌ Client-side auth validation error:', error);
+        setIsClientAuthValid(false);
+        window.location.href = '/login';
+      }
+    };
+    
+    validateAuth();
+  }, [initialUser]);
+  
+  // Use clientUser if server-side user is not available (cookies blocked)
+  const user = initialUser && initialUser.id ? initialUser : clientUser;
+  
+  // Don't render until we know auth status
+  if (isClientAuthValid === false || !user) {
+    return null; // Will redirect
+  }
+  
+  const { data: wallet, isLoading: walletLoading } = useWallet(user.id);
+  const createWalletMutation = useCreateWallet(user.id);
+  const refreshWallet = useRefreshWallet(user.id);
   const syncTransactions = useSyncTransactions();
   const hasSyncedOnLogin = useRef(false);
 
@@ -42,8 +98,10 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
 
   // Pre-populate auth cache
   useEffect(() => {
-    queryClient.setQueryData(['auth', 'session'], initialUser);
-  }, [initialUser]);
+    if (user) {
+      queryClient.setQueryData(['auth', 'session'], user);
+    }
+  }, [user]);
 
   // Auto-sync transactions on login (only once)
   useEffect(() => {
@@ -80,7 +138,7 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
               <h1 className="text-xl font-bold text-white">PayPay</h1>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-400 truncate max-w-[250px]">
-                  {initialUser.email}
+                  {user?.email || ''}
                 </span>
                 <LogoutButton 
                   className="text-xs text-red-400 hover:text-red-300 transition-colors cursor-pointer flex items-center gap-1"
@@ -288,10 +346,12 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
 };
 
 // ✨ Server-side auth validation - instant redirect if not logged in
+// NOTE: If cookies are blocked, this will return no user, but client-side auth will handle it
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const result = await requireAuth(context);
   
-  // Pass user as initialUser for Suspense
+  // Pass user as initialUser for Suspense (if available)
+  // If cookies are blocked, result will have redirect, but we'll handle it client-side
   if ('props' in result && result.props) {
     return {
       props: {
@@ -300,7 +360,13 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     };
   }
   
-  return result;
+  // If server-side auth failed (cookies blocked), return empty props
+  // Client-side will check localStorage and validate
+  return {
+    props: {
+      initialUser: null as any, // Will be handled client-side
+    },
+  };
 };
 
 export default Dashboard;

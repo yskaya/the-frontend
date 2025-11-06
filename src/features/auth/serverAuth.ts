@@ -18,14 +18,19 @@ export async function validateServerAuth(
     const cookies = context.req.headers.cookie || '';
     console.log('[Server Auth] Received cookies:', cookies ? cookies.substring(0, 150) + '...' : 'NONE');
     
-    // If no cookies, user is not authenticated
-    // Backend uses snake_case: access_token
-    if (!cookies.includes('access_token')) {
-      console.log('[Server Auth] ❌ No access_token found in cookies');
+    // Check for Authorization header as fallback (for cross-origin cookie blocking)
+    const authHeader = context.req.headers.authorization;
+    const hasAuthHeader = authHeader && authHeader.startsWith('Bearer ');
+    console.log('[Server Auth] Authorization header:', hasAuthHeader ? 'PRESENT' : 'NOT PRESENT');
+    
+    // If no cookies AND no Authorization header, user is not authenticated
+    const hasAccessTokenInCookies = cookies.includes('access_token');
+    if (!hasAccessTokenInCookies && !hasAuthHeader) {
+      console.log('[Server Auth] ❌ No access_token in cookies and no Authorization header');
       return null;
     }
 
-    console.log('[Server Auth] ✅ accessToken found, validating...');
+    console.log('[Server Auth] ✅ Token found (cookies or Authorization header), validating...');
 
     // Call your auth API to validate
     // Gateway has /api prefix, so we add it here
@@ -35,10 +40,18 @@ export async function validateServerAuth(
     // Add /api only if not already present
     const baseUrl = apiUrl.endsWith('/api') ? apiUrl : `${apiUrl}/api`;
     const fullUrl = `${baseUrl}/users/me`;
+    
+    // Build headers - include both cookies and Authorization header
+    const headers: Record<string, string> = {};
+    if (cookies) {
+      headers['Cookie'] = cookies;
+    }
+    if (hasAuthHeader && authHeader) {
+      headers['Authorization'] = authHeader;
+    }
+    
     const response = await fetch(fullUrl, {
-      headers: {
-        Cookie: cookies,
-      },
+      headers,
       credentials: 'include',
     });
 
