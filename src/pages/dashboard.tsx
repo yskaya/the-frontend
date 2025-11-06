@@ -167,6 +167,22 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
   const syncTransactions = useSyncTransactions();
   const hasSyncedOnLogin = useRef(false);
   
+  // Pre-populate auth cache (MUST be called before conditional returns)
+  useEffect(() => {
+    if (user) {
+      queryClient.setQueryData(['auth', 'session'], user);
+    }
+  }, [user]);
+  
+  // Auto-sync transactions on login (only once) - MUST be called before conditional returns
+  useEffect(() => {
+    if (wallet && !hasSyncedOnLogin.current && !walletLoading) {
+      hasSyncedOnLogin.current = true;
+      console.log('[Dashboard] Auto-syncing transactions on login...');
+      syncTransactions.mutate();
+    }
+  }, [wallet, walletLoading, syncTransactions]);
+  
   // Now safe to do conditional returns AFTER all hooks are called
   if (isClientAuthValid === false) {
     // Auth check completed and failed - redirecting
@@ -190,22 +206,6 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
     setSendOpen(true);
     // Keep contacts panel open - only the contact detail dialog closes
   };
-
-  // Pre-populate auth cache
-  useEffect(() => {
-    if (user) {
-      queryClient.setQueryData(['auth', 'session'], user);
-    }
-  }, [user]);
-
-  // Auto-sync transactions on login (only once)
-  useEffect(() => {
-    if (wallet && !hasSyncedOnLogin.current && !walletLoading) {
-      hasSyncedOnLogin.current = true;
-      console.log('[Dashboard] Auto-syncing transactions on login...');
-      syncTransactions.mutate();
-    }
-  }, [wallet, walletLoading, syncTransactions]);
 
   const walletAddress = wallet?.address || "";
   const balance = wallet?.balance || "0";
