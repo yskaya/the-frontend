@@ -59,12 +59,18 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
           userIdPreview: userId || null,
         });
         
-        if (accessToken && userId) {
+          if (accessToken && userId) {
           // Found tokens, validate them
           console.log('[Dashboard] ✅ Tokens found in localStorage, validating...');
+          console.log('[Dashboard] Token preview:', accessToken.substring(0, 50) + '...');
           try {
             const { validate } = await import('@/features/auth/auth.api');
             const user = await validate();
+            console.log('[Dashboard] Validate returned:', {
+              hasUser: !!user,
+              userId: user?.id,
+              userEmail: user?.email,
+            });
             if (user && user.id) {
               console.log('[Dashboard] ✅ Client-side auth validated, user:', user.email);
               setClientUser(user);
@@ -72,6 +78,7 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
               return; // Success - exit function
             } else {
               console.log('[Dashboard] ❌ Client-side auth validation returned invalid user');
+              console.log('[Dashboard] User object:', user);
               // Continue to next attempt
             }
           } catch (error: any) {
