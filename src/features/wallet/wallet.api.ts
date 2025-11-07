@@ -283,7 +283,22 @@ export const syncTransactions = async (userId?: string): Promise<{ message: stri
   });
 
   if (!response.ok) {
-    throw new Error('Failed to sync transactions');
+    // Try to get error message from response
+    let errorMessage = 'Failed to sync transactions';
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.message || errorData.error || errorMessage;
+    } catch (e) {
+      // If can't parse JSON, use status text
+      errorMessage = response.statusText || errorMessage;
+    }
+    
+    // Check for rate limit
+    if (response.status === 429) {
+      throw new Error('Rate limit exceeded. Please wait a moment before trying again.');
+    }
+    
+    throw new Error(errorMessage);
   }
 
   return response.json();

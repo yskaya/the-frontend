@@ -79,14 +79,14 @@ export const useWallet = (userId?: string) => {
       
       return result.wallet;
     },
-    staleTime: 1000 * 60, // Increased to 60s to reduce unnecessary refetches
-    // Smart polling: 15s if pending (reduced from 10s), 90s otherwise, but ONLY if window is visible
+    staleTime: 1000 * 60, // 60 seconds
+    // Poll every 60 seconds (1 minute) when window is visible
     refetchInterval: () => {
       // Stop polling if window is not visible
       if (!isVisible) return false;
       
-      // Poll frequently if pending transaction (15s to reduce rate limit issues), otherwise slower (90s)
-      return isPendingTransaction ? 1000 * 15 : 1000 * 90;
+      // Always poll every 60 seconds
+      return 1000 * 60;
     },
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
@@ -206,7 +206,7 @@ export const useSyncTransactions = () => {
       // Handle rate limit errors specifically
       if (error.message.includes('Rate limit') || error.message.includes('rate limit') || error.message.includes('too many requests')) {
         toast.error('Rate limit exceeded', { 
-          description: 'Please wait a moment and try again. The sync will retry automatically.',
+          description: 'Please wait a moment and try again.',
           duration: 5000,
         });
       } else {

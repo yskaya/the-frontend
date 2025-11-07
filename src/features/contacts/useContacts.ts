@@ -29,8 +29,8 @@ export const useContacts = () => {
     },
     // Use placeholder data from context for instant render while fetching
     placeholderData: contacts.length > 0 ? contacts : undefined,
-    refetchOnWindowFocus: true,
-    staleTime: 1000 * 60 * 5, // Fresh for 5 minutes
+    refetchOnWindowFocus: false, // Only fetch on sign-in, not on window focus
+    staleTime: Infinity, // Never mark as stale - only fetch on sign-in or manual refresh
   });
 };
 

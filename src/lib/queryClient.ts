@@ -15,13 +15,8 @@ export const queryClient = new QueryClient({
       refetchOnWindowFocus: true, // Refetch when user returns to tab
       refetchOnReconnect: true, // Refetch when internet reconnects
       
-      // Retry (don't retry 4xx errors)
-      retry: (failureCount, error: any) => {
-        const status = error?.response?.status;
-        if (status && status >= 400 && status < 500) return false;
-        return failureCount < 2;
-      },
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      // No automatic retries
+      retry: false,
     },
     mutations: {
       retry: 0,

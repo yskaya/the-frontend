@@ -177,36 +177,45 @@ export function usePayrolls() {
   const { data: payrolls, isLoading, error, refetch } = useQuery<Payroll[]>({
     queryKey: [PAYROLL_QUERY_KEY],
     queryFn: getPayrolls,
-    staleTime: 1000 * 60, // Increased to 60s to reduce unnecessary refetches
+    staleTime: 1000 * 60, // 60 seconds
     refetchInterval: () => {
       if (!isVisible) return false;
-      return shouldPollFrequently ? 1000 * 15 : 1000 * 90; // Reduced frequency to avoid rate limits
+      // Poll every 60 seconds when should poll frequently, otherwise no polling
+      return shouldPollFrequently ? 1000 * 60 : false;
     },
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
   });
 
-  // Check if any payroll is due soon or processing
+  // Check if any payroll needs polling (1 min before execution until 10 mins after)
   useEffect(() => {
     if (!payrolls) return;
     
     const now = new Date();
-    const hasProcessing = payrolls.some(p => p.status === 'processing');
-    const hasDueSoon = payrolls.some(p => {
-      if (p.status === 'processing') return true;
-      if (p.status !== 'scheduled') return false;
+    const hasActivePolling = payrolls.some(p => {
+      if (p.status !== 'scheduled' && p.status !== 'processing') return false;
       
       const scheduledFor = new Date(p.scheduledFor);
       const timeUntilDue = scheduledFor.getTime() - now.getTime();
-      return timeUntilDue <= 60000 && timeUntilDue > 0;
+      const timeSinceDue = now.getTime() - scheduledFor.getTime();
+      
+      // Start polling 1 minute before execution
+      const shouldStartPolling = timeUntilDue <= 60000 && timeUntilDue > 0;
+      
+      // Continue polling if processing or up to 10 minutes after scheduled time
+      const shouldContinuePolling = p.status === 'processing' || (timeSinceDue >= 0 && timeSinceDue <= 600000);
+      
+      return shouldStartPolling || shouldContinuePolling;
     });
     
+    // Refresh wallet/transactions when payroll is processing
+    const hasProcessing = payrolls.some(p => p.status === 'processing');
     if (hasProcessing) {
       queryClient.invalidateQueries({ queryKey: ['wallet'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
     }
     
-    setShouldPollFrequently(hasDueSoon || hasProcessing);
+    setShouldPollFrequently(hasActivePolling);
   }, [payrolls, queryClient]);
 
   // Refetch immediately when window becomes visible

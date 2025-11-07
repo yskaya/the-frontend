@@ -85,18 +85,13 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
           status: error?.response?.status,
           data: error?.response?.data,
         });
-        // If it's a 401/403, tokens are invalid - don't retry
-        if (error?.response?.status === 401 || error?.response?.status === 403) {
-          console.log('[Dashboard] Token is invalid (401/403), redirecting to login');
-          setIsClientAuthValid(false);
-          setTimeout(() => {
-            window.location.href = '/login';
-          }, 100);
-          return false; // Failed and redirecting
-        }
-        // For other errors, retry
-        console.log('[Dashboard] Retrying validation...');
-        return false; // Failed, will retry
+        // Redirect to login on any auth error
+        console.log('[Dashboard] Auth validation failed, redirecting to login');
+        setIsClientAuthValid(false);
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 100);
+        return false; // Failed and redirecting
       }
     }
     
@@ -143,68 +138,22 @@ const Dashboard = ({ initialUser }: DashboardProps) => {
         return true; // Success - we have initialUser
       }
       
-      return false; // Not found, will retry
+      return false; // Not found
     };
     
-    // Try immediate check first
+    // Try immediate check
     checkAuthImmediately().then((success) => {
-      if (success) {
-        // Success - user is set, component will re-render
-        return;
+      if (!success) {
+        // If failed and we don't have initialUser, redirect to login
+        if (!initialUser || !initialUser.id) {
+          console.log('[Dashboard] ❌ No valid tokens found, redirecting to login');
+          setIsClientAuthValid(false);
+          setTimeout(() => {
+            window.location.href = '/login';
+          }, 100);
+        }
       }
     });
-    
-    // If immediate check failed, retry with delays (for race conditions)
-    const checkAuth = async () => {
-      // CRITICAL: Increase wait time to ensure localStorage is fully populated after redirect
-      // Also check multiple times to handle race conditions
-      for (let attempt = 0; attempt < 5; attempt++) {
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        const accessToken = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-        const userId = typeof window !== 'undefined' ? localStorage.getItem('user_id') : null;
-        
-        console.log(`[Dashboard] localStorage check attempt ${attempt + 1}:`, {
-          hasAccessToken: !!accessToken,
-          hasUserId: !!userId,
-          accessTokenPreview: accessToken ? accessToken.substring(0, 20) + '...' : null,
-          userIdPreview: userId || null,
-        });
-        
-        if (accessToken && userId) {
-          // Found tokens, validate them
-          const success = await validateAndSetUser(accessToken, userId);
-          if (success) {
-            return; // Success - exit function
-          }
-          // Continue to next attempt if validation failed
-        }
-        
-        // If we have initialUser but localStorage tokens are missing, we're still good
-        // This handles the case where cookies work but localStorage wasn't set
-        if (initialUser && initialUser.id) {
-          console.log('[Dashboard] ✅ Using server-side user (cookies work, localStorage not needed)');
-          setIsClientAuthValid(true);
-          return; // Success - we have initialUser
-        }
-      }
-      
-      // If we get here, tokens were never found or validation failed after all attempts
-      // Check if we have initialUser as last resort
-      if (initialUser && initialUser.id) {
-        console.log('[Dashboard] ✅ Using server-side user as last resort (cookies work)');
-        setIsClientAuthValid(true);
-        return; // Success - we have initialUser
-      }
-      
-      console.log('[Dashboard] ❌ No valid tokens found after all attempts, redirecting to login');
-      setIsClientAuthValid(false);
-      setTimeout(() => {
-        window.location.href = '/login';
-      }, 100);
-    };
-    
-    checkAuth();
   }, [initialUser]);
   
   // Use clientUser if server-side user is not available (cookies blocked or deleted)
