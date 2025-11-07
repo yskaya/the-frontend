@@ -1,4 +1,5 @@
 import { Wallet, Transaction } from './wallet.types';
+import { api } from '@/lib';
 
 // Use gateway URL - gateway already has /api prefix
 // For direct fetch calls, use gateway URL with /api prefix (if not already present)
@@ -56,21 +57,14 @@ export const createWallet = async (userId?: string): Promise<CreateWalletRespons
   const userIdToUse = userId || getUserId();
   console.log('[createWallet] Using user ID:', userIdToUse);
   
-    const response = await fetch(`${WALLET_API_BASE}/wallet`, {
-      method: 'POST',
-      credentials: 'include', // Include cookies for authentication
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-id': userIdToUse,
-      },
-  });
+  const response = await api.post<CreateWalletResponse>('/wallet');
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to create wallet');
+  if (response.error || !response.data) {
+    const errorMessage = response.error || 'Failed to create wallet';
+    throw new Error(errorMessage);
   }
 
-  return response.json();
+  return response.data;
 };
 
 /**
@@ -81,20 +75,13 @@ export const getWallet = async (userId?: string): Promise<Wallet | null> => {
     const userIdToUse = userId || getUserId();
     console.log('[getWallet] Using user ID:', userIdToUse);
     
-    const response = await fetch(`${WALLET_API_BASE}/wallet`, {
-      method: 'GET',
-      credentials: 'include', // Include cookies for authentication
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-id': userIdToUse,
-      },
-    });
+    const response = await api.get<any>('/wallet');
 
-    if (!response.ok) {
+    if (response.error || !response.data) {
       return null;
     }
 
-    const data = await response.json();
+    const data = response.data;
     
     // If wallet doesn't exist, return null
     if (data.wallet === null || !data.address) {
@@ -129,20 +116,13 @@ export const getWalletWithTransactions = async (
     const userIdToUse = userId || getUserId();
     console.log('[getWalletWithTransactions] Using user ID:', userIdToUse);
     
-    const response = await fetch(`${WALLET_API_BASE}/wallet/with-transactions?limit=${limit}`, {
-      method: 'GET',
-      credentials: 'include', // Include cookies for authentication
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-id': userIdToUse,
-      },
-    });
+    const response = await api.get<any>(`/wallet/with-transactions?limit=${limit}`);
 
-    if (!response.ok) {
+    if (response.error || !response.data) {
       return { wallet: null, transactions: [] };
     }
 
-    const data = await response.json();
+    const data = response.data;
     
     // If wallet doesn't exist, return null
     if (!data.wallet || data.wallet === null) {
@@ -208,23 +188,14 @@ export const getTransactions = async (): Promise<Transaction[]> => {
     const userId = getUserId();
     console.log('[getTransactions] Fetching for user:', userId);
     
-    const response = await fetch(`${WALLET_API_BASE}/wallet/transactions`, {
-      method: 'GET',
-      credentials: 'include', // Include cookies for authentication
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-id': userId,
-      },
-    });
+    const response = await api.get<any[]>('/wallet/transactions');
 
-    console.log('[getTransactions] Response status:', response.status);
-
-    if (!response.ok) {
-      console.error('[getTransactions] Response not OK:', response.status);
+    if (response.error || !response.data) {
+      console.error('[getTransactions] Error:', response.error);
       return [];
     }
 
-    const data = await response.json();
+    const data = response.data;
     console.log('[getTransactions] Received transactions:', data.length);
 
     // Map backend transactions to frontend Transaction type
@@ -273,55 +244,28 @@ export const getTransactions = async (): Promise<Transaction[]> => {
 export const syncTransactions = async (userId?: string): Promise<{ message: string; newTransactions: number; newIncoming?: number; newOutgoing?: number }> => {
   const userIdToUse = userId || getUserId();
   
-  const response = await fetch(`${WALLET_API_BASE}/wallet/sync-incoming`, {
-    method: 'POST',
-    credentials: 'include', // Include cookies for authentication
-    headers: {
-      'Content-Type': 'application/json',
-      'x-user-id': userIdToUse,
-    },
-  });
+  const response = await api.post<{ message: string; newTransactions: number; newIncoming?: number; newOutgoing?: number }>('/wallet/sync-incoming');
 
-  if (!response.ok) {
-    // Try to get error message from response
-    let errorMessage = 'Failed to sync transactions';
-    try {
-      const errorData = await response.json();
-      errorMessage = errorData.message || errorData.error || errorMessage;
-    } catch (e) {
-      // If can't parse JSON, use status text
-      errorMessage = response.statusText || errorMessage;
-    }
-    
-    // Check for rate limit
-    if (response.status === 429) {
-      throw new Error('Rate limit exceeded. Please wait a moment before trying again.');
-    }
-    
+  if (response.error || !response.data) {
+    const errorMessage = response.error || 'Failed to sync transactions';
     throw new Error(errorMessage);
   }
 
-  return response.json();
+  return response.data;
 };
 
 /**
  * Send crypto transaction
+ * Now uses the unified API client for proper authentication handling
  */
 export const sendCrypto = async (request: SendTransactionRequest): Promise<SendTransactionResponse> => {
-  const response = await fetch(`${WALLET_API_BASE}/wallet/send`, {
-    method: 'POST',
-    credentials: 'include', // Include cookies for authentication
-    headers: {
-      'Content-Type': 'application/json',
-      'x-user-id': getUserId(),
-    },
-    body: JSON.stringify(request),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'Failed to send transaction');
+  const response = await api.post<SendTransactionResponse>('/wallet/send', request);
+  
+  if (response.error || !response.data) {
+    const errorMessage = response.error || 'Failed to send transaction';
+    console.error('❌ Send transaction error:', errorMessage);
+    throw new Error(errorMessage);
   }
 
-  return response.json();
+  return response.data;
 };
