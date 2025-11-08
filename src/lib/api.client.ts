@@ -111,9 +111,12 @@ export class ApiClient {
 
   async post<T>(url: string, data?: unknown, options?: { silent?: boolean }): Promise<ApiResponse<T>> {
     try {
+      console.log(`[ApiClient] POST ${url}`, { data });
       const response = await this.client.post<T>(url, data);
+      console.log(`[ApiClient] POST ${url} - Success:`, response.status);
       return { data: response.data };
     } catch (error) {
+      console.error(`[ApiClient] POST ${url} - Error:`, error);
       return this.handleError(error, options?.silent);
     }
   }
@@ -140,6 +143,16 @@ export class ApiClient {
     if (axios.isAxiosError(error)) {
       const axiosError = error as AxiosError<ApiError>;
       
+      // Log detailed error information
+      console.error('[ApiClient] Axios Error Details:', {
+        url: axiosError.config?.url,
+        method: axiosError.config?.method,
+        status: axiosError.response?.status,
+        statusText: axiosError.response?.statusText,
+        data: axiosError.response?.data,
+        message: axiosError.message,
+      });
+      
       // Check for rate limit errors (429)
       if (axiosError.response?.status === 429) {
         const apiError = axiosError.response?.data;
@@ -159,7 +172,7 @@ export class ApiClient {
       }
       
       const apiError = axiosError.response?.data;
-      const errorMessage = apiError?.message || 'Request failed';
+      const errorMessage = apiError?.message || axiosError.message || 'Request failed';
       
       // Return error response instead of throwing
       // This prevents ErrorBoundary from catching API errors
@@ -171,6 +184,7 @@ export class ApiClient {
       this.errorHandler(error);
     }
     
+    console.error('[ApiClient] Non-Axios Error:', error);
     const errorMessage = 'An unexpected error occurred';
     // Return error response instead of throwing
     return { error: errorMessage };

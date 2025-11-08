@@ -1,7 +1,7 @@
 import { Clock, Loader2, X, Calendar, RefreshCw, Users, Trash2 } from "lucide-react";
 import { Badge } from "@/ui/badge";
 import { Button } from "@/ui/button";
-import { Dialog, DialogContent, DialogTrigger } from "@/ui/dialog";
+import { Sheet, SheetContent, SheetTrigger } from "@/ui/sheet";
 import { usePayrolls, useCancelPayroll, useCreatePayroll, useDeletePayroll } from "../hooks";
 import { Payroll } from "../types";
 import { toast } from "sonner";
@@ -41,13 +41,29 @@ export function ScheduledPaymentsPanel() {
   const createPayrollMutation = useCreatePayroll();
   const [selectedPayroll, setSelectedPayroll] = useState<Payroll | null>(null);
 
-  // Show all payrolls (scheduled, processing, cancelled, failed, completed)
-  // Sort by scheduling date (scheduledFor) - nearest scheduled date first
+  // Show pending payrolls: created, signed, scheduled
+  // Exclude processing, completed, failed, cancelled (those go to PayrollsPanel)
+  // Sort by status priority first, then by scheduled date
   const payrolls = (allPayrolls || [])
+    .filter((p) => 
+      p.status === 'created' || 
+      p.status === 'signed' || 
+      p.status === 'scheduled'
+    )
     .sort((a, b) => {
+      // Status priority: created (needs action) > signed > scheduled
+      const statusOrder: Record<string, number> = { created: 0, signed: 1, scheduled: 2 };
+      const statusA = statusOrder[a.status] ?? 999;
+      const statusB = statusOrder[b.status] ?? 999;
+      
+      if (statusA !== statusB) {
+        return statusA - statusB; // Sort by status priority
+      }
+      
+      // Within same status, sort by scheduled date (nearest first)
       const dateA = new Date(a.scheduledFor).getTime();
       const dateB = new Date(b.scheduledFor).getTime();
-      return dateA - dateB; // Nearest scheduled date first (ascending)
+      return dateA - dateB;
     });
 
   const handleCancel = async (e: React.MouseEvent, id: string) => {
@@ -160,8 +176,8 @@ export function ScheduledPaymentsPanel() {
             const processingCount = payroll.recipients.filter(r => r.status === 'processing').length;
             
             return (
-              <Dialog key={payroll.id}>
-                <DialogTrigger asChild>
+              <Sheet key={payroll.id}>
+                <SheetTrigger asChild>
                   <div
                     className="payroll-item"
                     onClick={() => setSelectedPayroll(payroll)}
@@ -169,13 +185,17 @@ export function ScheduledPaymentsPanel() {
                     {/* Icon */}
                     <TransactionStatusIcon
                       status={
-                        payroll.status === 'completed'
-                          ? 'sent' // Green icon for completed
+                        payroll.status === 'created'
+                          ? 'created' // Blue - needs signature
+                          : payroll.status === 'signed'
+                          ? 'signed' // Green - signed
+                          : payroll.status === 'scheduled'
+                          ? 'scheduled' // Purple - scheduled
                           : payroll.status === 'processing'
-                          ? 'pending' // Orange icon for processing
-                          : payroll.status === 'failed' || payroll.status === 'cancelled'
-                          ? 'failed' // Red icon for failed/cancelled
-                          : 'scheduled' // Grey icon for scheduled
+                          ? 'processing' // Orange - processing
+                          : payroll.status === 'completed'
+                          ? 'sent' // Green - completed
+                          : 'failed' // Red - failed/cancelled
                       }
                     />
 
@@ -215,10 +235,10 @@ export function ScheduledPaymentsPanel() {
                       </p>
                     </div>
                   </div>
-                </DialogTrigger>
-                <DialogContent 
-                  aria-describedby={undefined} 
-                  className="!border-0 !shadow-none !p-0 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right data-[state=closed]:!zoom-out-0 data-[state=open]:!zoom-in-0 !fixed !right-0 !left-auto !top-0 !bottom-0 !w-full !max-w-[700px] !h-screen !max-h-screen rounded-none transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500 overflow-hidden"
+                </SheetTrigger>
+                <SheetContent 
+                  side="bottom" 
+                  className="w-full max-w-[600px] mx-auto h-full max-h-screen overflow-hidden bg-transparent border-0 p-0"
                 >
                   {selectedPayroll && (
                     <PayrollDetailsDialog 
@@ -229,10 +249,11 @@ export function ScheduledPaymentsPanel() {
                       isCancelling={cancelMutation.isPending}
                       isRestarting={createPayrollMutation.isPending}
                       isDeleting={deleteMutation.isPending}
+                      theme="white"
                     />
                   )}
-                </DialogContent>
-              </Dialog>
+                </SheetContent>
+              </Sheet>
             );
           })}
         </div>

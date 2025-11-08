@@ -76,13 +76,13 @@ function SheetContent({
         }}
         className={cn(
           "bg-white data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col gap-4 p-6 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
-          !className?.includes("w-") && side === "right" &&
+          !className?.includes("centered-sheet") && !className?.includes("w-") && side === "right" &&
             "data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm",
-          !className?.includes("w-") && side === "left" &&
+          !className?.includes("centered-sheet") && !className?.includes("w-") && side === "left" &&
             "data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left inset-y-0 left-0 h-full w-3/4 border-r sm:max-w-sm",
-          className?.includes("w-") && side === "right" &&
+          !className?.includes("centered-sheet") && className?.includes("w-") && side === "right" &&
             "data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 h-full border-l",
-          className?.includes("w-") && side === "left" &&
+          !className?.includes("centered-sheet") && className?.includes("w-") && side === "left" &&
             "data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left inset-y-0 left-0 h-full border-r",
           side === "top" &&
             "data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top inset-x-0 top-0 h-auto border-b rounded-none",
@@ -94,12 +94,12 @@ function SheetContent({
       >
         {children}
         <SheetPrimitive.Close className={cn(
-          "absolute rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none",
+          "absolute rounded-lg p-2.5 transition-all focus:outline-hidden disabled:pointer-events-none",
           side === "top" 
-            ? "top-4 right-4 h-8 w-8 hover:bg-white/10 text-white" 
-            : "top-4 right-4 hover:bg-gray-100 text-gray-700"
+            ? "top-6 right-6 hover:bg-white/10 focus:bg-white/10 focus:ring-2 focus:ring-white/20 text-white" 
+            : "top-6 right-6 hover:bg-gray-100 focus:bg-gray-100 focus:ring-2 focus:ring-gray-300 text-gray-500 hover:text-gray-900"
         )}>
-          <XIcon className={side === "top" ? "size-8" : "size-4"} />
+          <XIcon className={side === "top" ? "size-6" : "size-5"} />
           <span className="sr-only">Close</span>
         </SheetPrimitive.Close>
       </SheetPrimitive.Content>

@@ -20,6 +20,7 @@ export interface Transaction {
   type: 'send' | 'receive';
   amount: string;
   currency: string;
+  from?: string;
   address: string; // from/to address
   timestamp: string;
   status: 'completed' | 'pending' | 'failed';
@@ -32,6 +33,7 @@ export interface Transaction {
   fullDate: string;
   nonce: string;
   labels?: string[];
+  errorMessage?: string;
   // Scheduled payment fields
   isScheduled?: boolean;
   scheduledFor?: string;

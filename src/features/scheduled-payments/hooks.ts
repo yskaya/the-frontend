@@ -14,6 +14,7 @@ import {
   createPayroll,
   getPayrolls,
   getPayroll,
+  signPayroll,
   cancelPayroll,
   deletePayroll,
 } from './api';
@@ -287,6 +288,27 @@ export function useCancelPayroll() {
     },
     onError: (error: any) => {
       toast.error('Failed to cancel payroll', {
+        description: error.message || 'An error occurred',
+      });
+    },
+  });
+}
+
+/**
+ * Sign a payroll - moves from 'created' to 'signed' state
+ */
+export function useSignPayroll() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ id, signature }: { id: string; signature: string }) =>
+      signPayroll(id, signature),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [PAYROLL_QUERY_KEY] });
+      toast.success('Payroll signed successfully');
+    },
+    onError: (error: any) => {
+      toast.error('Failed to sign payroll', {
         description: error.message || 'An error occurred',
       });
     },

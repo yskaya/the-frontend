@@ -1,7 +1,7 @@
 import { Copy, QrCode } from "lucide-react";
 import { Button } from "@/ui/button";
+import { Separator } from "@/ui/separator";
 import { toast } from "sonner";
-import { DialogHeader, DialogTitle, DialogDescription } from "@/ui/dialog";
 
 interface ReceiveCryptoDialogProps {
   walletAddress: string;
@@ -14,13 +14,18 @@ export function ReceiveCryptoDialog({ walletAddress }: ReceiveCryptoDialogProps)
   };
 
   return (
-    <div className="space-y-6 bg-white text-black rounded-lg -m-6 p-6">
-      <DialogHeader>
-        <DialogTitle className="text-black">Receive Crypto</DialogTitle>
-        <DialogDescription className="text-gray-600">
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-1">
+          Receive Crypto
+        </h2>
+        <p className="text-sm text-gray-600">
           Share your wallet address to receive ETH
-        </DialogDescription>
-      </DialogHeader>
+        </p>
+      </div>
+
+      <Separator className="bg-gray-200" />
 
       {/* QR Code Placeholder */}
       <div className="bg-gray-100 rounded-lg p-8 flex items-center justify-center aspect-square max-w-xs mx-auto border border-gray-300">

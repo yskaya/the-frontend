@@ -45,14 +45,18 @@ export interface ScheduledPaymentFormData {
 
 /**
  * Payroll Types (Batch payroll with multiple recipients)
+ * 
+ * State Flow:
+ * created -> signed -> scheduled -> processing -> completed/failed/cancelled
  */
 export type PayrollStatus = 
+  | 'created'    // Just created, needs signature
+  | 'signed'     // Signed by user, will auto-schedule
   | 'scheduled'  // Waiting to be executed
   | 'processing' // Currently being executed
   | 'completed'  // All recipients processed
   | 'failed'     // Payroll failed
-  | 'cancelled'  // Cancelled by user
-  | 'signed';    // Signed and ready to execute
+  | 'cancelled'; // Cancelled by user or auto-cancelled if unsigned
 
 export type PayrollRecipientStatus = 
   | 'pending'    // Waiting to be executed
@@ -65,6 +69,7 @@ export interface PayrollRecipient {
   payrollId: string;
   recipientAddress: string;
   recipientName?: string;
+  recipientEmail?: string; // Email address of recipient
   amount: string; // ETH amount per recipient
   status: PayrollRecipientStatus;
   transactionId?: string; // Links to Transaction if completed
@@ -80,6 +85,9 @@ export interface Payroll {
   name: string; // Payroll name (e.g., "October 2025 Payroll")
   scheduledFor: string; // ISO date string
   status: PayrollStatus;
+  signature?: string; // User's signature (stored as text)
+  signedAt?: string; // ISO date string when signed
+  signedBy?: string; // User ID who signed (for audit)
   note?: string;
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string
@@ -94,6 +102,7 @@ export interface CreatePayrollDto {
   recipients: {
     recipientAddress: string;
     recipientName?: string;
+    recipientEmail?: string;
     amount: string; // Amount per recipient
   }[];
 }

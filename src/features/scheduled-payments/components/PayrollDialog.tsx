@@ -1,20 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useCreatePayroll } from '../hooks';
 import type { ScheduledPaymentFormData } from '../types';
 import { Button } from '@/ui/button';
 import { Input } from '@/ui/input';
 import { Label } from '@/ui/label';
 import { Textarea } from '@/ui/textarea';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/ui/dialog';
+import { Separator } from '@/ui/separator';
+import { Sheet, SheetContent, SheetTrigger } from '@/ui/sheet';
+import { StickyNote } from '@/ui/sticky-note';
+import { toast } from 'sonner';
 import {
   Select,
   SelectContent,
@@ -22,9 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/ui/select';
-import { Checkbox } from '@/ui/checkbox';
-import { CalendarClock, X } from 'lucide-react';
-import { ScrollArea } from '@/ui/scroll-area';
+import { CalendarClock, User, X } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 // Import contacts API
 import { useContacts } from '@/features/contacts';
@@ -53,38 +48,106 @@ export function PayrollDialog({
     note: '',
   });
   const [payrollName, setPayrollName] = useState('');
-  const [selectedContactIds, setSelectedContactIds] = useState<string[]>([]);
-  const [recipientAmounts, setRecipientAmounts] = useState<Record<string, string>>({}); // contactId -> amount
-  const [showContactSelect, setShowContactSelect] = useState(false);
+  const [rows, setRows] = useState<Array<{ id: string; name: string; address: string; email?: string; amount: string }>>([
+    { id: crypto.randomUUID(), name: '', address: '', email: '', amount: '' },
+  ]);
+  const [suggestionsByRow, setSuggestionsByRow] = useState<Record<string, Array<{ id?: string; name: string; address: string; email?: string }>>>({});
+  const [isEditingNote, setIsEditingNote] = useState(false);
+  const [noteDraft, setNoteDraft] = useState('');
+  const [justAddedRowId, setJustAddedRowId] = useState<string | null>(null);
+  const [removingRowId, setRemovingRowId] = useState<string | null>(null);
 
-  // Removed handleContactToggle - using inline handlers to prevent infinite loops
+  useEffect(() => {
+    if (!justAddedRowId) return;
+    const timer = setTimeout(() => setJustAddedRowId(null), 400);
+    return () => clearTimeout(timer);
+  }, [justAddedRowId]);
 
-  const handleRemoveContact = (contactId: string) => {
-    setSelectedContactIds(prev => prev.filter(id => id !== contactId));
-    setRecipientAmounts(prev => {
-      const updated = { ...prev };
-      delete updated[contactId];
-      return updated;
-    });
+  const filledRows = useMemo(
+    () => rows.filter(row => row.address.trim()),
+    [rows],
+  );
+
+  const totalAmountEth = useMemo(
+    () => filledRows.reduce((sum, row) => sum + (parseFloat(row.amount || '0') || 0), 0),
+    [filledRows],
+  );
+
+  const isValidAddress = (value: string) => /^0x[a-fA-F0-9]{40}$/i.test(value.trim());
+
+  const networkFeeEth = 0.002; // Placeholder flat network fee
+  const appFeeRate = 0.005; // 0.5%
+  const appFeeEth = totalAmountEth * appFeeRate;
+  const grandTotalEth = totalAmountEth + (totalAmountEth > 0 ? appFeeEth + networkFeeEth : 0);
+
+  const selectedContacts = contacts || [];
+
+  const handleRowChange = (rowId: string, value: string) => {
+    setRows(prev =>
+      prev.map(row =>
+        row.id === rowId
+          ? { ...row, name: value, address: value, email: '' }
+          : row,
+      ),
+    );
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) {
+      setSuggestionsByRow(prev => ({ ...prev, [rowId]: [] }));
+      return;
+    }
+    const matches = selectedContacts
+      .filter(contact =>
+        contact.name.toLowerCase().includes(normalized) ||
+        contact.address.toLowerCase().includes(normalized)
+      )
+      .slice(0, 5)
+      .map(contact => ({
+        id: contact.id,
+        name: contact.name,
+        address: contact.address,
+        email: contact.email,
+      }));
+    setSuggestionsByRow(prev => ({ ...prev, [rowId]: matches }));
   };
 
-  const handleAmountChange = (contactId: string, amount: string) => {
-    setRecipientAmounts(prev => ({
-      ...prev,
-      [contactId]: amount,
-    }));
+  const handleAmountInput = (rowId: string, value: string) => {
+    setRows(prev =>
+      prev.map(row =>
+        row.id === rowId
+          ? { ...row, amount: value }
+          : row,
+      ),
+    );
   };
 
-  const selectedContacts = contacts?.filter(c => selectedContactIds.includes(c.id)) || [];
+  const setRowFromContact = (rowId: string, contact: { id?: string; name: string; address: string; email?: string }) => {
+    setRows(prev =>
+      prev.map(row =>
+        row.id === rowId
+          ? { ...row, name: contact.name, address: contact.address, email: contact.email || '' }
+          : row,
+      ),
+    );
+    setSuggestionsByRow(prev => ({ ...prev, [rowId]: [] }));
+  };
+
+  const handleAddRow = () => {
+    const newRow = { id: crypto.randomUUID(), name: '', address: '', email: '', amount: '' };
+    setRows(prev => [...prev, newRow]);
+    setJustAddedRowId(newRow.id);
+  };
+
+  const handleRemoveRow = (rowId: string) => {
+    if (rows.length === 1 || removingRowId === rowId) return;
+    setRemovingRowId(rowId);
+    setTimeout(() => {
+      setRows(prev => prev.filter(row => row.id !== rowId));
+      setRemovingRowId(current => (current === rowId ? null : current));
+    }, 250);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validate at least one contact selected
-    if (selectedContactIds.length === 0) {
-      alert('Please select at least one contact');
-      return;
-    }
 
     // Validate payroll name
     if (!payrollName.trim()) {
@@ -93,9 +156,22 @@ export function PayrollDialog({
     }
 
     // Validate all recipients have amounts
-    const missingAmounts = selectedContactIds.filter(id => !recipientAmounts[id] || parseFloat(recipientAmounts[id]) <= 0);
-    if (missingAmounts.length > 0) {
-      alert('Please enter an amount for all selected recipients');
+    const filledRows = rows.filter(row => row.name.trim() || row.address.trim());
+
+    if (filledRows.length === 0) {
+      alert('Please add at least one recipient');
+      return;
+    }
+
+    const invalidAmount = filledRows.find(row => !row.amount || parseFloat(row.amount) <= 0);
+    if (invalidAmount) {
+      alert('Please enter a valid amount for each recipient');
+      return;
+    }
+
+    const invalidAddress = filledRows.find(row => !isValidAddress(row.address));
+    if (invalidAddress) {
+      toast.error('Each recipient needs a valid wallet address (0x...)');
       return;
     }
 
@@ -112,32 +188,39 @@ export function PayrollDialog({
     }
 
     // Create payroll with recipients (will be handled by backend API)
-    await createMutation.mutateAsync({
-      name: payrollName,
-      scheduledFor: scheduledFor.toISOString(),
-      note: formData.note || undefined,
-      recipients: selectedContacts.map(contact => ({
-        recipientAddress: contact.address,
-        recipientName: contact.name || undefined,
-        amount: recipientAmounts[contact.id],
-      })),
-    });
+    try {
+      await createMutation.mutateAsync({
+        name: payrollName,
+        scheduledFor: scheduledFor.toISOString(),
+        note: formData.note || undefined,
+        recipients: filledRows.map(row => {
+          const trimmedAddress = row.address.trim();
+          const trimmedName = row.name.trim();
+          const trimmedEmail = row.email?.trim();
 
-    // Reset form and close dialog
-    setFormData({
-      recipientAddress: '',
-      recipientName: '',
-      amount: '',
-      scheduledDate: '',
-      scheduledTime: '',
-      note: '',
-    });
-    setPayrollName('');
-    setSelectedContactIds([]);
-    setRecipientAmounts({});
-    setShowContactSelect(false);
-    setOpen(false);
-    onSuccess?.();
+          return {
+            recipientAddress: trimmedAddress,
+            recipientName: trimmedName && trimmedName.toLowerCase() !== trimmedAddress.toLowerCase() ? trimmedName : undefined,
+            recipientEmail: trimmedEmail || undefined,
+            amount: row.amount,
+          };
+        }),
+      });
+
+      toast.success('Payroll created successfully');
+      setRows([{ id: crypto.randomUUID(), name: '', address: '', email: '', amount: '' }]);
+      setIsEditingNote(false);
+      setNoteDraft('');
+
+      if (onSuccess) {
+        onSuccess();
+      }
+
+      setOpen(false);
+    } catch (error) {
+      toast.error('Failed to create payroll');
+      console.error(error);
+    }
   };
 
   const updateField = (field: keyof ScheduledPaymentFormData, value: string) => {
@@ -147,226 +230,285 @@ export function PayrollDialog({
   
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
         <Button className={buttonClassName}>
           <CalendarClock className="h-5 w-5" />
           {buttonText}
         </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Schedule Payroll Payment</DialogTitle>
-          <DialogDescription>
-            Select a contact and schedule when to send the payment
-          </DialogDescription>
-        </DialogHeader>
+      </SheetTrigger>
+      <SheetContent 
+        side="bottom" 
+        className="w-full max-w-[600px] mx-auto h-full max-h-screen overflow-hidden bg-transparent border-0 p-0"
+      >
+        <div className="h-full bg-white overflow-y-auto p-6">
+        <div className="space-y-6">
+          {/* Header */}
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-1">
+              Schedule Payroll Payment
+            </h2>
+            <p className="text-sm text-gray-600">
+              Select contacts and schedule when to send the payment
+            </p>
+          </div>
+
+          <Separator className="bg-gray-200" />
         
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
+          <StickyNote
+            value={isEditingNote ? noteDraft : (formData.note || '')}
+            isEditing={isEditingNote}
+            onClick={() => {
+              setNoteDraft(formData.note || '');
+              setIsEditingNote(true);
+            }}
+            onChange={(nextValue) => setNoteDraft(nextValue)}
+            onSave={() => {
+              const sanitized = noteDraft.startsWith('NOTE: ')
+                ? noteDraft.slice(6).trim()
+                : noteDraft.trim();
+              updateField('note', sanitized);
+              setIsEditingNote(false);
+            }}
+            onCancel={() => {
+              setNoteDraft(formData.note || '');
+              setIsEditingNote(false);
+            }}
+            placeholder="Click to add a note..."
+            autoFocus
+          />
+
           {/* Payroll Name */}
-          <div className="space-y-2">
-            <Label htmlFor="payrollName">
-              Payroll Name <span className="text-red-500">*</span>
-            </Label>
+          <div className="relative">
             <Input
               id="payrollName"
               type="text"
-              placeholder="October 2025 Payroll"
+              placeholder=" "
               value={payrollName}
               onChange={(e) => setPayrollName(e.target.value)}
+              className="peer h-16 pt-8 pb-4 placeholder-transparent"
               required
             />
-          </div>
-
-          {/* Contact Multi-Selector */}
-          <div className="space-y-2">
-            <Label>
-              Select Contacts <span className="text-red-500">*</span>
+            <Label
+              htmlFor="payrollName"
+              className="pointer-events-none absolute left-4 top-[0.5rem] text-xs text-gray-500 transition-all duration-200 ease-out peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-focus:top-[0.5rem] peer-focus:text-xs peer-focus:text-purple-500"
+            >
+              Payroll Name <span className="text-red-500">*</span>
             </Label>
-            {contactsLoading ? (
-              <div className="text-sm text-muted-foreground">Loading contacts...</div>
-            ) : contacts && contacts.length > 0 ? (
-              <div className="space-y-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setShowContactSelect(!showContactSelect)}
-                  className="w-full justify-between"
-                >
-                  <span>
-                    {selectedContactIds.length === 0
-                      ? 'Choose contacts'
-                      : `${selectedContactIds.length} contact${selectedContactIds.length > 1 ? 's' : ''} selected`}
-                  </span>
-                  <span className="text-xs text-muted-foreground">▼</span>
-                </Button>
-                
-                {showContactSelect && (
-                  <div className="border rounded-md bg-white p-2 max-h-[200px] overflow-y-auto">
-                    <ScrollArea className="h-full">
-                      {contacts.map((contact) => (
-                        <div
-                          key={contact.id}
-                          className="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded"
-                        >
-                          <Checkbox
-                            checked={selectedContactIds.includes(contact.id)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setSelectedContactIds(prev => [...prev, contact.id]);
-                              } else {
-                                setSelectedContactIds(prev => prev.filter(id => id !== contact.id));
-                              }
-                            }}
-                          />
-                          <div 
-                            className="flex-1 cursor-pointer"
-                            onClick={() => {
-                              const isSelected = selectedContactIds.includes(contact.id);
-                              if (isSelected) {
-                                setSelectedContactIds(prev => prev.filter(id => id !== contact.id));
-                              } else {
-                                setSelectedContactIds(prev => [...prev, contact.id]);
-                              }
-                            }}
-                          >
-                            <p className="text-sm font-medium">{contact.name}</p>
-                            <p className="text-xs text-muted-foreground font-mono">
-                              {contact.address.slice(0, 10)}...{contact.address.slice(-8)}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </ScrollArea>
-                  </div>
-                )}
-
-                {/* Show selected contacts with amount inputs */}
-                {selectedContacts.length > 0 && (
-                  <div className="space-y-3">
-                    <Label className="text-sm font-medium">Set Amounts per Recipient</Label>
-                    {selectedContacts.map((contact) => (
-                      <div
-                        key={contact.id}
-                        className="p-3 bg-muted rounded-md space-y-2"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">{contact.name}</p>
-                            <p className="text-xs text-muted-foreground font-mono break-all">
-                              {contact.address}
-                            </p>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveContact(contact.id)}
-                            className="h-6 w-6 p-0"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Label htmlFor={`amount-${contact.id}`} className="text-xs whitespace-nowrap">
-                            Amount (ETH):
-                          </Label>
-                          <Input
-                            id={`amount-${contact.id}`}
-                            type="number"
-                            step="0.000001"
-                            min="0.000001"
-                            placeholder="0.01"
-                            value={recipientAmounts[contact.id] || ''}
-                            onChange={(e) => handleAmountChange(contact.id, e.target.value)}
-                            className="flex-1"
-                            required
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-sm text-muted-foreground">
-                No contacts found. Add contacts first.
-              </div>
-            )}
           </div>
 
           {/* Scheduled Date */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="scheduledDate">
-                Date <span className="text-red-500">*</span>
-              </Label>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="relative">
               <Input
                 id="scheduledDate"
                 type="date"
+                placeholder=" "
                 value={formData.scheduledDate}
                 onChange={(e) => updateField('scheduledDate', e.target.value)}
+                className="peer h-16 pt-8 pb-4 placeholder-transparent"
                 required
               />
+              <Label
+                htmlFor="scheduledDate"
+                className="pointer-events-none absolute left-4 top-[0.5rem] text-xs text-gray-500 transition-all duration-200 ease-out peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-focus:top-[0.5rem] peer-focus:text-xs peer-focus:text-purple-500"
+              >
+                Date <span className="text-red-500">*</span>
+              </Label>
             </div>
 
-            {/* Scheduled Time */}
-            <div className="space-y-2">
-              <Label htmlFor="scheduledTime">
-                Time <span className="text-red-500">*</span>
-              </Label>
+            <div className="relative">
               <Input
                 id="scheduledTime"
                 type="time"
+                placeholder=" "
                 value={formData.scheduledTime}
                 onChange={(e) => updateField('scheduledTime', e.target.value)}
+                className="peer h-16 pt-8 pb-4 placeholder-transparent"
                 required
               />
+              <Label
+                htmlFor="scheduledTime"
+                className="pointer-events-none absolute left-4 top-[0.5rem] text-xs text-gray-500 transition-all duration-200 ease-out peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-focus:top-[0.5rem] peer-focus:text-xs peer-focus:text-purple-500"
+              >
+                Time <span className="text-red-500">*</span>
+              </Label>
             </div>
           </div>
 
-          <p className="text-xs text-muted-foreground">
-            Time is in your local timezone
-          </p>
+          {/* Recipients */}
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm font-semibold text-gray-900">Recipients</p>
+            </div>
+            <div className="space-y-3">
+              {rows.map((row, index) => {
+                const contactMatch = selectedContacts.find(
+                  contact =>
+                    contact.name.toLowerCase() === row.name.toLowerCase() ||
+                    contact.address.toLowerCase() === row.address.toLowerCase()
+                );
+                const rowSuggestions = suggestionsByRow[row.id] || [];
+                const isNew = justAddedRowId === row.id;
+                const isRemoving = removingRowId === row.id;
+ 
+                return (
+                  <div
+                    key={row.id}
+                    className={`flex flex-col gap-3 md:flex-row md:items-start transition-all duration-300 ${
+                      isNew ? 'animate-in fade-in-0 slide-in-from-bottom-2' : ''
+                    } ${isRemoving ? 'animate-out fade-out-0 slide-out-to-top-2 pointer-events-none' : ''}`}
+                  >
+                    <div className="relative md:flex-1">
+                      <Input
+                        placeholder=" "
+                        value={row.address}
+                        onChange={(e) => handleRowChange(row.id, e.target.value)}
+                        className="peer h-16 px-4 pt-8 pb-4 placeholder-transparent"
+                      />
+                      <Label
+                        className="pointer-events-none absolute left-4 top-[0.5rem] text-xs text-gray-500 transition-all duration-200 ease-out peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-focus:top-[0.5rem] peer-focus:translate-y-0 peer-focus:text-xs peer-focus:text-purple-500"
+                      >
+                        Wallet
+                        {contactMatch && (
+                          <span className="ml-2 inline-flex items-center gap-1 text-[11px] text-gray-500">
+                            <User className="h-3 w-3 text-gray-400" />
+                            <span className="font-medium text-gray-600">
+                              {contactMatch.name || contactMatch.email || ''}
+                            </span>
+                          </span>
+                        )}
+                      </Label>
+                      {!contactMatch && row.address && rowSuggestions.length > 0 && (
+                        <div className="absolute z-10 mt-2 w-full rounded-lg border border-gray-200 bg-white shadow-sm">
+                          {rowSuggestions.map(suggestion => (
+                            <button
+                              key={suggestion.id ?? suggestion.address}
+                              type="button"
+                              className="flex w-full items-start gap-2 px-3 py-2 text-left hover:bg-gray-50"
+                              onClick={() => {
+                                setRowFromContact(row.id, suggestion);
+                              }}
+                            >
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900">{suggestion.name}</p>
+                                {suggestion.email && (
+                                  <p className="text-xs text-gray-500">{suggestion.email}</p>
+                                )}
+                                <p className="text-xs font-mono text-gray-500 break-all">{suggestion.address}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
 
-          {/* Note (Optional) */}
-          <div className="space-y-2">
-            <Label htmlFor="note">Note (Optional)</Label>
-            <Textarea
-              id="note"
-              placeholder="October 2025 salary"
-              value={formData.note}
-              onChange={(e) => updateField('note', e.target.value)}
-              rows={2}
-            />
+                    <div className="flex items-start gap-3 md:w-[260px]">
+                      <div className="relative flex-1">
+                        <Input
+                          placeholder=" "
+                          type="number"
+                          step="0.000001"
+                          min="0.000001"
+                          value={row.amount}
+                          onChange={(e) => handleAmountInput(row.id, e.target.value)}
+                          className="peer h-16 px-4 pt-8 pb-4 text-lg font-semibold placeholder-transparent"
+                          inputMode="decimal"
+                        />
+                        <Label
+                          className="pointer-events-none absolute left-4 top-[0.5rem] text-xs text-gray-500 transition-all duration-200 ease-out peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-500 peer-focus:top-[0.5rem] peer-focus:translate-y-0 peer-focus:text-xs peer-focus:text-purple-500"
+                        >
+                          Amount (ETH)
+                          {row.amount && (
+                            <span className="ml-2 text-[11px] text-gray-400">
+                              ≈ ${(parseFloat(row.amount || '0') * 3243).toFixed(2)} USD
+                            </span>
+                          )}
+                        </Label>
+                      </div>
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="mt-2 h-8 w-8 shrink-0 text-gray-400 hover:text-gray-700"
+                        onClick={() => handleRemoveRow(row.id)}
+                        disabled={rows.length === 1}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+
+              <div className="mt-6 group flex flex-col items-center gap-2">
+                <div className="flex w-full items-center justify-center gap-3 text-sm font-medium text-gray-500">
+                  <span className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent transition-colors duration-200 group-hover:via-purple-400" />
+                  <button
+                    type="button"
+                    onClick={handleAddRow}
+                    className="relative inline-flex items-center gap-2 px-3 py-1 rounded-full border border-dashed border-gray-300 group-hover:border-purple-400 group-hover:text-purple-600 transition-all duration-200"
+                  >
+                    + add more
+                  </button>
+                  <span className="flex-1 h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent transition-colors duration-200 group-hover:via-purple-400" />
+                </div>
+               </div>
+            </div>
           </div>
 
-          {/* Submit Buttons */}
-          <div className="flex gap-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
+          {/* Summary */}
+          <div className="bg-gray-100 rounded-2xl p-4 space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Recipients</span>
+              <span className="text-black font-medium">{filledRows.length}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Subtotal</span>
+              <span className="text-black font-semibold">{totalAmountEth.toFixed(3)} ETH</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Network Fee (est.)</span>
+              <span className="text-black">{totalAmountEth > 0 ? networkFeeEth.toFixed(3) : '0.000'} ETH</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600">Platform Fee (0.5%)</span>
+              <span className="text-black">{totalAmountEth > 0 ? appFeeEth.toFixed(3) : '0.000'} ETH</span>
+            </div>
+            <div className="flex justify-between text-sm border-t border-white/40 pt-2">
+              <span className="text-gray-600">Total Due</span>
+              <span className="text-black font-semibold">{grandTotalEth.toFixed(3)} ETH</span>
+            </div>
+            <p className="text-[11px] text-gray-500">
+              {/* TODO: Replace with live gas + FX data */}
+              Estimates include a flat network fee and 0.5% platform fee. Update once final pricing service is wired in.
+            </p>
+          </div>
+
+          {/* Submit Button */}
+          <div className="sticky bottom-0 left-0 right-0 pt-4 pb-2 bg-white">
             <Button
               type="submit"
-              className="flex-1"
+              className="w-full h-16 rounded-2xl bg-gradient-to-r from-purple-500 to-indigo-500 text-white hover:from-purple-600 hover:to-indigo-600 disabled:from-purple-500 disabled:to-indigo-500 disabled:opacity-40"
               disabled={
                 createMutation.isPending || 
-                selectedContactIds.length === 0 || 
+                filledRows.length === 0 ||
                 !payrollName.trim() ||
-                selectedContactIds.some(id => !recipientAmounts[id] || parseFloat(recipientAmounts[id]) <= 0)
+                rows.some(row => (row.name.trim() || row.address.trim()) && (!row.amount || parseFloat(row.amount) <= 0))
               }
             >
-              {createMutation.isPending ? 'Creating Payroll...' : `Create Payroll (${selectedContactIds.length} recipient${selectedContactIds.length > 1 ? 's' : ''})`}
+              {createMutation.isPending
+                ? 'Creating Payroll...'
+                : `Create Payroll (${filledRows.length} recipient${filledRows.length === 1 ? '' : 's'})`}
             </Button>
           </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+          </form>
+        </div>
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }
 

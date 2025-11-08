@@ -96,6 +96,24 @@ export async function getPayroll(id: string): Promise<Payroll> {
 }
 
 /**
+ * Sign a payroll - moves from 'created' to 'signed' state
+ */
+export async function signPayroll(
+  id: string,
+  signature: string
+): Promise<Payroll> {
+  const response = await api.post<Payroll>(`${PAYROLL_BASE_PATH}/${id}/sign`, {
+    signature,
+  });
+  
+  if (!response.data) {
+    throw new Error(response.error || 'Failed to sign payroll');
+  }
+  
+  return response.data;
+}
+
+/**
  * Cancel a payroll (only if scheduled)
  */
 export async function cancelPayroll(id: string): Promise<{ message: string }> {

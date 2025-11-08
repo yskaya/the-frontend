@@ -4,6 +4,8 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* centered-sheet styles no longer needed for bottom-sheet modals */
+
 :root {
   --font-size: 16px;
   --background: #ffffff;

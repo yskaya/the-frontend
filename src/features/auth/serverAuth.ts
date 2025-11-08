@@ -56,6 +56,22 @@ export async function validateServerAuth(
     });
 
     console.log('[Server Auth] Validation API response status:', response.status);
+    
+    // Log response details for debugging 502 errors
+    if (response.status === 502) {
+      console.error('[Server Auth] ❌ 502 Bad Gateway - API Gateway cannot reach Users service');
+      console.error('[Server Auth] URL attempted:', fullUrl);
+      console.error('[Server Auth] This usually means:');
+      console.error('[Server Auth]   1. Users service is down or crashed');
+      console.error('[Server Auth]   2. USERS_SERVICE_URL is not configured correctly in API Gateway');
+      console.error('[Server Auth]   3. Network issue between API Gateway and Users service');
+      try {
+        const errorText = await response.text();
+        console.error('[Server Auth] Error response:', errorText.substring(0, 500));
+      } catch (e) {
+        console.error('[Server Auth] Could not read error response');
+      }
+    }
 
     if (!response.ok) {
       console.log('[Server Auth] ❌ Validation failed');

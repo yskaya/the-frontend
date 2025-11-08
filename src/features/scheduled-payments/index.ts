@@ -9,6 +9,10 @@ export type {
   ScheduledPaymentStatus, 
   CreateScheduledPaymentDto,
   ScheduledPaymentFormData,
+  Payroll,
+  PayrollStatus,
+  PayrollRecipient,
+  CreatePayrollDto,
 } from './types';
 
 // API Functions
@@ -17,6 +21,12 @@ export {
   getScheduledPayments,
   getScheduledPayment,
   cancelScheduledPayment,
+  createPayroll,
+  getPayrolls,
+  getPayroll,
+  signPayroll,
+  cancelPayroll,
+  deletePayroll,
 } from './api';
 
 // React Query Hooks
@@ -26,6 +36,12 @@ export {
   useCreateScheduledPayment,
   useCancelScheduledPayment,
   useRefreshScheduledPayments,
+  usePayrolls,
+  usePayroll,
+  useCreatePayroll,
+  useSignPayroll,
+  useCancelPayroll,
+  useDeletePayroll,
 } from './hooks';
 
 // UI Components
@@ -38,4 +54,5 @@ export { PayrollsToSignPanel } from './components/PayrollsToSignPanel';
 export { PayrollDialog } from './components/PayrollDialog';
 export { PayrollDetailsDialog } from './components/PayrollDetailsDialog';
 export { PayrollsPanel } from './components/PayrollsPanel';
+export { SignPayrollDialog } from './components/SignPayrollDialog';
 

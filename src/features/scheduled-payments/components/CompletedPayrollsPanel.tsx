@@ -176,7 +176,7 @@ export function CompletedPayrollsPanel() {
                 </DialogTrigger>
                 <DialogContent 
                   aria-describedby={undefined} 
-                  className="!border-0 !shadow-none !p-0 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right data-[state=closed]:!zoom-out-0 data-[state=open]:!zoom-in-0 !fixed !right-0 !left-auto !top-0 !bottom-0 !w-full !max-w-[700px] !h-screen !max-h-screen rounded-none transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500 overflow-hidden"
+                  className="!border-0 !shadow-none !p-0 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right data-[state=closed]:!zoom-out-0 data-[state=open]:!zoom-in-0 !fixed !right-0 !left-auto !top-0 !bottom-0 !w-full !max-w-[600px] !h-screen !max-h-screen rounded-none transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500 overflow-hidden"
                 >
                   {selectedPayroll && (
                     <PayrollDetailsDialog 
