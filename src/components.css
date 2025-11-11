@@ -229,7 +229,7 @@
   padding-right: 80px;
   padding-bottom: 60px;
   padding-left: 80px;
-  gap: 42px;
+  gap: 32px;
   background: rgba(31, 0, 55, 0.7);
   display: flex;
   flex-direction: column;
@@ -238,11 +238,12 @@
 /* Payrolls to sign heading */
 .payrolls-to-sign-heading {
   font-family: var(--font-nunito-sans), Nunito Sans, sans-serif;
-  font-weight: 500;
-  font-size: 20px;
+  font-weight: 600;
+  font-size: 12px;
   line-height: 110%;
-  letter-spacing: -0.02em;
-  color: rgba(136, 136, 136, 1);
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 /* Payrolls to sign list container */
@@ -426,6 +427,288 @@
 .transaction-amount-container {
   text-align: right;
   flex-shrink: 0;
+}
+
+/* ============================================
+   TRANSACTION DIALOG STYLES
+   ============================================ */
+
+.dashboard-transaction-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding: 32px;
+  background: rgba(24, 0, 44, 0.9);
+  min-height: 100%;
+  color: white;
+  border-radius: 32px;
+}
+
+.dashboard-transaction-status-card {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  border-radius: 28px;
+  padding: 24px 28px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dashboard-transaction-status-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dashboard-transaction-status-icon-wrap {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dashboard-transaction-status-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dashboard-transaction-status-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dashboard-transaction-status-title {
+  font-family: var(--font-nunito-sans), Nunito Sans, sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.dashboard-transaction-status-timestamp {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.dashboard-transaction-grid {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.dashboard-transaction-column {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.dashboard-transaction-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.dashboard-transaction-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dashboard-transaction-section-title {
+  font-family: var(--font-nunito-sans), Nunito Sans, sans-serif;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.dashboard-transaction-section-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dashboard-transaction-icon-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.dashboard-transaction-hash-card {
+  padding: 16px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  font-family: var(--font-nunito-sans), Nunito Sans, sans-serif;
+}
+
+.dashboard-transaction-hash-label {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 6px;
+}
+
+.dashboard-transaction-hash-value {
+  display: block;
+  font-family: var(--font-nunito-sans), Nunito Sans, sans-serif;
+  font-size: 13px;
+  word-break: break-all;
+  color: white;
+}
+
+.dashboard-transaction-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dashboard-transaction-meta-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.dashboard-transaction-meta-label {
+  min-width: 120px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.dashboard-transaction-meta-value {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 14px;
+}
+
+.dashboard-transaction-meta-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dashboard-transaction-amount {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dashboard-transaction-amount-primary {
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+}
+
+.dashboard-transaction-amount-secondary {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.dashboard-transaction-address {
+  font-family: var(--font-nunito-sans), Nunito Sans, sans-serif;
+  font-size: 12px;
+  word-break: break-all;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.dashboard-transaction-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.dashboard-transaction-timeline-step {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.dashboard-transaction-timeline-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.dashboard-transaction-timeline-icon-completed {
+  background: rgba(34, 197, 94, 0.25);
+  color: rgba(34, 197, 94, 1) !important;
+}
+
+.dashboard-transaction-timeline-icon-current {
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.4);
+}
+
+.dashboard-transaction-timeline-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dashboard-transaction-timeline-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.dashboard-transaction-timeline-description {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.dashboard-transaction-timeline-time {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.dashboard-transaction-timeline-connector {
+  height: 100%;
+  width: 1px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.0) 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0.0) 100%
+  );
+  margin-left: 20px;
+}
+
+.dashboard-transaction-labels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dashboard-transaction-label {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* ============================================

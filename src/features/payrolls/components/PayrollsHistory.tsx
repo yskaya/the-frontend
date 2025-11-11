@@ -1,3 +1,5 @@
+'use client';
+
 import { RefreshCw, Loader2, Users } from "lucide-react";
 import { Button } from "@/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/ui/sheet";
@@ -5,56 +7,19 @@ import { usePayrolls, useCancelPayroll, useCreatePayroll, useDeletePayroll } fro
 import { toast } from "sonner";
 import { useState } from "react";
 import { Payroll } from "../types";
-import { TransactionStatusIcon } from "@/ui/TransactionStatusIcon";
-import { PayrollDetailsDialog } from "./PayrollDetailsDialog";
-import { formatRelativeDate } from "@/lib/utils";
+import { PayrollItem } from "./PayrollItem";
+import { PayrollDialog } from "./PayrollDialog";
+import { cn } from "@/lib/utils";
 
-// Format date as "May 26, 2025"
-function formatDate(date: string | Date): string {
-  const d = new Date(date);
-  return d.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  });
-}
-
-// Format date with time as "May 26, 2025 • 01:00pm"
-function formatDateWithTime(date: string | Date): string {
-  const d = new Date(date);
-  const dateStr = d.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  });
-  const timeStr = d.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  }).toLowerCase().replace(' ', '');
-  return `${dateStr} • ${timeStr}`;
-}
-
-// Format time as "01:00pm"
-function formatTime(date: string | Date): string {
-  const d = new Date(date);
-  return d.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  }).toLowerCase().replace(' ', '');
-}
-
-// Format date and time together
-function formatDateTime(date: string | Date): string {
-  return `${formatDate(date)} • ${formatTime(date)}`;
-}
-
-interface PayrollsPanelProps {
+interface PayrollsHistoryProps {
   embedded?: boolean;
+  showHeader?: boolean;
+  className?: string;
 }
 
-export function PayrollsPanel({ embedded = false }: PayrollsPanelProps) {
+export function PayrollsHistory({
+  className,
+}: PayrollsHistoryProps) {
   const { data: allPayrolls, isLoading, error, refetch } = usePayrolls();
   const cancelMutation = useCancelPayroll();
   const deleteMutation = useDeletePayroll();
@@ -62,7 +27,7 @@ export function PayrollsPanel({ embedded = false }: PayrollsPanelProps) {
   const [selectedPayroll, setSelectedPayroll] = useState<Payroll | null>(null);
 
   // Show processing, completed, cancelled, and failed payrolls
-  // Exclude created, signed, scheduled (those go to ScheduledPaymentsPanel)
+  // Exclude created, signed, scheduled (handled elsewhere in the UI)
   // Sort by execution status, then by date
   const payrolls = (allPayrolls || [])
     .filter((p) => 
@@ -72,16 +37,6 @@ export function PayrollsPanel({ embedded = false }: PayrollsPanelProps) {
       p.status === 'failed'
     )
     .sort((a, b) => {
-      // Status priority: processing > completed > failed > cancelled
-      const statusOrder: Record<string, number> = { processing: 0, completed: 1, failed: 2, cancelled: 3 };
-      const statusA = statusOrder[a.status] ?? 999;
-      const statusB = statusOrder[b.status] ?? 999;
-      
-      if (statusA !== statusB) {
-        return statusA - statusB; // Sort by status priority
-      }
-      
-      // Within same status, sort by scheduled date (most recent first)
       const dateA = new Date(a.scheduledFor).getTime();
       const dateB = new Date(b.scheduledFor).getTime();
       return dateB - dateA; // Most recent first (descending)
@@ -139,22 +94,6 @@ export function PayrollsPanel({ embedded = false }: PayrollsPanelProps) {
     toast.success('Payrolls refreshed');
   };
 
-  const header = !embedded ? (
-    <div className="flex items-center justify-between gap-2">
-      <h2 className="transactions-history-heading flex items-center gap-2">
-        Payroll History
-      </h2>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={refreshPayrolls}
-        className="text-white hover:text-white hover:bg-white/10"
-        title="Refresh payrolls"
-      >
-        <RefreshCw className="h-4 w-4" />
-      </Button>
-    </div>
-  ) : null;
 
   const content = (
     <>
@@ -200,57 +139,17 @@ export function PayrollsPanel({ embedded = false }: PayrollsPanelProps) {
                       setSelectedPayroll(payroll);
                     }}
                   >
-                    {/* Icon */}
-                    <div
-                      className={`transaction-icon-container ${
-                        payroll.status === 'processing'
-                          ? 'transaction-icon-pending'
-                          : payroll.status === 'completed'
-                          ? 'transaction-icon-sent'
-                          : payroll.status === 'failed' || payroll.status === 'cancelled'
-                          ? 'transaction-icon-sent'
-                          : 'transaction-icon-pending'
-                      }`}
-                    >
-                      <TransactionStatusIcon
-                        status={
-                          payroll.status === 'processing'
-                            ? 'processing'
-                            : payroll.status === 'completed'
-                            ? 'sent'
-                            : payroll.status === 'failed' || payroll.status === 'cancelled'
-                            ? 'failed'
-                            : 'scheduled'
-                        }
-                      />
-                    </div>
-
-                    {/* Payroll Info */}
-                    <div className="transaction-info-container">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="transaction-item-text">
-                          {payroll.name}
-                        </span>
-                        <span className="dot-separator">•</span>
-                        <span className="transaction-date-time flex items-center gap-1">
-                          <Users className="h-3 w-3" />
-                          {payroll.recipients.length}
-                        </span>
-                      </div>
-                      <div className="transaction-hash">
-                        {formatDateWithTime(payroll.scheduledFor)}
-                      </div>
-                    </div>
-
-                    {/* Amount */}
-                    <div className="transaction-amount-container">
-                      <p className="transaction-usd-amount">
-                        ${totalAmountUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </p>
-                      <p className="transaction-amount">
-                        {totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ETH
-                      </p>
-                    </div>
+                    <PayrollItem
+                      status={payroll.status}
+                      name={payroll.name}
+                      recipients={payroll.recipients.length}
+                      date={payroll.scheduledFor}
+                      walletId={payroll.id}
+                      amount={{
+                        usd: totalAmountUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                        eth: totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                      }}
+                    />
                   </button>
                 </SheetTrigger>
                 <SheetContent 
@@ -258,9 +157,9 @@ export function PayrollsPanel({ embedded = false }: PayrollsPanelProps) {
                   className="w-full max-w-[600px] mx-auto h-full max-h-screen overflow-hidden bg-transparent border-0 p-0"
                 >
                   {selectedPayroll && (
-                    <PayrollDetailsDialog 
+                    <PayrollDialog 
                       payroll={selectedPayroll}
-                      onCancel={selectedPayroll.status === 'scheduled' ? (id) => handleCancel({} as React.MouseEvent, id) : undefined}
+                      onCancel={selectedPayroll.status === 'scheduled' ? (id: string) => handleCancel({} as React.MouseEvent, id) : undefined}
                       onRestart={(selectedPayroll.status === 'failed' || selectedPayroll.status === 'cancelled') ? handleRestart : undefined}
                       onDelete={(selectedPayroll.status === 'failed' || selectedPayroll.status === 'cancelled') ? handleDelete : undefined}
                       isCancelling={cancelMutation.isPending}
@@ -277,21 +176,14 @@ export function PayrollsPanel({ embedded = false }: PayrollsPanelProps) {
     </>
   );
 
-  if (embedded) {
-    return (
-      <div className="flex flex-col gap-4 h-full">
-        {content}
-      </div>
-    );
-  }
+  const gapClass = selectedPayroll ? "gap-8" : "gap-4";
 
   return (
-    <div className="transactions-panel-wrapper">
-      <div className="transactions-panel-container">
-        {header}
-        {content}
-      </div>
+    <div className={cn("max-w-[700px] w-full mx-auto flex flex-col", gapClass, className)}>
+      <h2 className="payrolls-to-sign-heading">Payroll History</h2>
+      {content}
     </div>
   );
 }
+
 

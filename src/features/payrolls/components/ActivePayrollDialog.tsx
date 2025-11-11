@@ -8,6 +8,7 @@ import { useSignPayroll, useDeletePayroll } from '../hooks';
 import { Payroll } from '../types';
 import { Users, Calendar, RefreshCw, Rocket, FileText, Copy } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatDateTime } from '@/lib/dateFormat';
 
 interface SignPayrollDialogProps {
   payroll: Payroll;
@@ -15,32 +16,7 @@ interface SignPayrollDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-// Format date as "May 26, 2025"
-function formatDate(date: string | Date): string {
-  const d = new Date(date);
-  return d.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  });
-}
-
-// Format time as "01:00pm"
-function formatTime(date: string | Date): string {
-  const d = new Date(date);
-  return d.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  }).toLowerCase().replace(' ', '');
-}
-
-// Format date and time together
-function formatDateTime(date: string | Date): string {
-  return `${formatDate(date)} • ${formatTime(date)}`;
-}
-
-export function SignPayrollDialog({ payroll, open, onOpenChange }: SignPayrollDialogProps) {
+export function ActivePayrollDialog({ payroll, open, onOpenChange }: SignPayrollDialogProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showInputs, setShowInputs] = useState(true);
   const [justSigned, setJustSigned] = useState(false);

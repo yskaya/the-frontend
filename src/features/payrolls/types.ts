@@ -1,23 +1,23 @@
 /**
- * Scheduled Payment Types
- * Phase 1: Single scheduled payments (one-time only)
+ * Payroll Payment Types
+ * Phase 1: Single payroll payments (one-time only)
  */
 
-export type ScheduledPaymentStatus = 
+export type PayrollPaymentStatus = 
   | 'pending'    // Waiting to be executed
   | 'processing' // Currently being executed
   | 'completed'  // Successfully executed
   | 'failed'     // Execution failed
   | 'cancelled'; // Cancelled by user
 
-export interface ScheduledPayment {
+export interface PayrollPayment {
   id: string;
   userId: string;
   recipientAddress: string;
   recipientName?: string;
   amount: string; // ETH amount as string
   scheduledFor: string; // ISO date string
-  status: ScheduledPaymentStatus;
+  status: PayrollPaymentStatus;
   note?: string;
   createdAt: string; // ISO date string
   updatedAt: string; // ISO date string
@@ -26,7 +26,7 @@ export interface ScheduledPayment {
   errorMessage?: string; // Error details if failed
 }
 
-export interface CreateScheduledPaymentDto {
+export interface CreatePayrollPaymentDto {
   recipientAddress: string;
   recipientName?: string;
   amount: string;
@@ -34,7 +34,7 @@ export interface CreateScheduledPaymentDto {
   note?: string;
 }
 
-export interface ScheduledPaymentFormData {
+export interface PayrollPaymentFormData {
   recipientAddress: string;
   recipientName?: string;
   amount: string;

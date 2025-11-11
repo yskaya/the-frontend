@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useCreatePayroll } from '../hooks';
-import type { ScheduledPaymentFormData } from '../types';
+import type { PayrollPaymentFormData } from '../types';
 import { Button } from '@/ui/button';
 import { Input } from '@/ui/input';
 import { Label } from '@/ui/label';
@@ -24,22 +24,22 @@ import { Search } from 'lucide-react';
 // Import contacts API
 import { useContacts } from '@/features/contacts';
 
-interface PayrollDialogProps {
+interface CreatePayrollDialogProps {
   onSuccess?: () => void;
   buttonClassName?: string;
   buttonText?: string;
 }
 
-export function PayrollDialog({ 
+export function CreatePayrollDialog({ 
   onSuccess, 
   buttonClassName = "font-semibold",
   buttonText = "Payroll"
-}: PayrollDialogProps) {
+}: CreatePayrollDialogProps) {
   const [open, setOpen] = useState(false);
   const createMutation = useCreatePayroll();
   const { data: contacts, isLoading: contactsLoading } = useContacts();
 
-  const [formData, setFormData] = useState<ScheduledPaymentFormData>({
+  const [formData, setFormData] = useState<PayrollPaymentFormData>({
     recipientAddress: '',
     recipientName: '',
     amount: '',
@@ -223,7 +223,7 @@ export function PayrollDialog({
     }
   };
 
-  const updateField = (field: keyof ScheduledPaymentFormData, value: string) => {
+  const updateField = (field: keyof PayrollPaymentFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -237,16 +237,16 @@ export function PayrollDialog({
           {buttonText}
         </Button>
       </SheetTrigger>
-      <SheetContent 
-        side="bottom" 
+      <SheetContent
+        side="bottom"
         className="w-full max-w-[600px] mx-auto h-full max-h-screen overflow-hidden bg-transparent border-0 p-0"
       >
-        <div className="h-full bg-white overflow-y-auto p-6">
+        <div className="h-full bg-white text-black overflow-y-auto p-6">
         <div className="space-y-6">
           {/* Header */}
           <div>
             <h2 className="text-2xl font-bold text-gray-900 mb-1">
-              Schedule Payroll Payment
+              Create Payroll Payment
             </h2>
             <p className="text-sm text-gray-600">
               Select contacts and schedule when to send the payment
@@ -511,4 +511,5 @@ export function PayrollDialog({
     </Sheet>
   );
 }
+
 

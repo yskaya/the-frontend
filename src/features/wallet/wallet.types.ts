@@ -34,7 +34,7 @@ export interface Transaction {
   nonce: string;
   labels?: string[];
   errorMessage?: string;
-  // Scheduled payment fields
+  // Payroll payment fields
   isScheduled?: boolean;
   scheduledFor?: string;
   recipientName?: string;

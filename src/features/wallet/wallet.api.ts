@@ -165,7 +165,7 @@ export const getWalletWithTransactions = async (
         fullDate: new Date(tx.createdAt).toLocaleString(),
         nonce: tx.nonce?.toString() || '',
         labels: [],
-        // Scheduled payment fields
+        // Payroll payment fields
         isScheduled: tx.isScheduled || false,
         scheduledFor: tx.scheduledFor,
         recipientName: tx.recipientName,
@@ -222,7 +222,7 @@ export const getTransactions = async (): Promise<Transaction[]> => {
         fullDate: new Date(tx.createdAt).toLocaleString(),
         nonce: tx.nonce?.toString() || '',
         labels: [],
-        // Scheduled payment fields
+        // Payroll payment fields
         isScheduled: tx.isScheduled || false,
         scheduledFor: tx.scheduledFor,
         recipientName: tx.recipientName,

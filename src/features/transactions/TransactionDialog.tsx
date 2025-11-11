@@ -1,3 +1,5 @@
+'use client';
+
 import { ArrowDownLeft, ArrowUpRight, Copy, ExternalLink, Blocks } from "lucide-react";
 import { Button } from "@/ui/button";
 import { Badge } from "@/ui/badge";
@@ -6,53 +8,37 @@ import { TransactionStatusIcon } from "@/ui/TransactionStatusIcon";
 import { useAuthContext } from "@/features/auth";
 import { useWallet } from "@/features/wallet";
 import type { ReactNode } from "react";
-import type { Transaction } from "./wallet.types";
+import type { Transaction } from "@/features/wallet";
+import { formatDateTime } from "@/lib/dateFormat";
 
-interface TransactionDetailsDialogProps {
+interface TransactionDialogProps {
   transaction: Transaction;
 }
 
-// Format date as "Nov 5, 2025 • 3:53pm"
-function formatDateWithTime(date: string | Date): string {
-  const d = new Date(date);
-  const dateStr = d.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  });
-  const timeStr = d.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  }).toLowerCase().replace(' ', '');
-  return `${dateStr} • ${timeStr}`;
-}
-
-export function TransactionDetailsDialog({ transaction }: TransactionDetailsDialogProps) {
+export function TransactionDialog({ transaction }: TransactionDialogProps) {
   const { user } = useAuthContext();
   const { data: wallet } = useWallet(user?.id);
   const walletAddress = wallet?.address || "";
+
   const handleCopyHash = () => {
     navigator.clipboard.writeText(transaction.hash);
     toast.success("Transaction hash copied");
   };
 
   const handleViewOnExplorer = () => {
-    // Open Sepolia Etherscan
     window.open(`https://sepolia.etherscan.io/tx/${transaction.hash}`, '_blank');
     toast.success("Opening Sepolia Explorer...");
   };
 
-  // Get background color based on transaction type
   const getBackgroundColor = () => {
     if (transaction.status === "pending") {
-      return "rgba(80, 50, 5, 1)"; // Orange/brown for pending
+      return "rgba(80, 50, 5, 1)";
     } else if (transaction.status === "failed") {
-      return "rgba(48, 16, 16, 1)"; // Red for failed
+      return "rgba(48, 16, 16, 1)";
     } else if (transaction.type === "receive") {
-      return "rgba(20, 35, 55, 1)"; // Blue for received
+      return "rgba(20, 35, 55, 1)";
     } else {
-      return "rgba(10, 25, 15, 1)"; // Green for sent
+      return "rgba(10, 25, 15, 1)";
     }
   };
 
@@ -88,8 +74,7 @@ export function TransactionDetailsDialog({ transaction }: TransactionDetailsDial
           : transaction.type === 'send'
             ? 'Sent'
             : 'Received';
-  const typeSubtitle =
-    transaction.type === 'send' ? 'send transaction' : 'receive transaction';
+  
 
   const amountColor = (() => {
     if (transaction.status === "pending") {
@@ -105,11 +90,10 @@ export function TransactionDetailsDialog({ transaction }: TransactionDetailsDial
   })();
 
   return (
-    <div 
+    <div
       className="rounded-lg h-full flex flex-col"
       style={{ backgroundColor: statusBgColor }}
     >
-      {/* Fixed Header */}
       <div className="p-8 pb-4 border-b border-white/10">
         <div className="flex items-center gap-4">
           <div className="flex items-center justify-center w-14 h-14">
@@ -162,9 +146,7 @@ export function TransactionDetailsDialog({ transaction }: TransactionDetailsDial
               </Badge>
             </div>
             <div className="text-sm text-gray-400 flex items-center gap-2">
-              <span className="capitalize text-gray-300">{typeSubtitle}</span>
-              <span className="text-gray-600">•</span>
-              <span>{formatDateWithTime(transaction.timestamp)}</span>
+              <span>{formatDateTime(transaction.timestamp)}</span>
             </div>
           </div>
         </div>
@@ -181,9 +163,7 @@ export function TransactionDetailsDialog({ transaction }: TransactionDetailsDial
         </div>
       )}
 
-      {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto py-8 space-y-6">
-        {/* Amount & Fees */}
         <div className="bg-white/5 rounded-lg mx-6 p-6 border border-white/10 space-y-6">
           <div className="text-center space-y-2">
             <p className="text-4xl font-bold" style={{ color: amountColor }}>
@@ -233,7 +213,6 @@ export function TransactionDetailsDialog({ transaction }: TransactionDetailsDial
           View on Sepolia Explorer
         </Button>
 
-        {/* Transaction Details */}
         <div className="space-y-4 px-6">
           <div className="space-y-4">
             <DetailRow label="Tx Hash">
@@ -257,7 +236,9 @@ export function TransactionDetailsDialog({ transaction }: TransactionDetailsDial
               <div className="flex items-center gap-2">
                 <code className="text-sm text-white font-mono break-all flex-1">
                   {(() => {
-                    const value = transaction.type === 'receive' ? transaction.from || transaction.address : transaction.from || walletAddress;
+                    const value = transaction.type === 'receive'
+                      ? transaction.from || transaction.address
+                      : transaction.from || walletAddress;
                     return value.length > 32 ? `${value.slice(0, 18)}…${value.slice(-10)}` : value;
                   })()}
                 </code>
@@ -266,7 +247,10 @@ export function TransactionDetailsDialog({ transaction }: TransactionDetailsDial
                   size="icon"
                   className="h-6 w-6 shrink-0 hover:bg-white/10 text-white"
                   onClick={() => {
-                    navigator.clipboard.writeText(transaction.type === 'receive' ? transaction.from || transaction.address : transaction.from || walletAddress);
+                    const value = transaction.type === 'receive'
+                      ? transaction.from || transaction.address
+                      : transaction.from || walletAddress;
+                    navigator.clipboard.writeText(value);
                     toast.success('Address copied');
                   }}
                 >
@@ -278,7 +262,9 @@ export function TransactionDetailsDialog({ transaction }: TransactionDetailsDial
               <div className="flex items-center gap-2">
                 <code className="text-sm text-white font-mono break-all flex-1">
                   {(() => {
-                    const value = transaction.type === 'send' ? transaction.address : walletAddress;
+                    const value = transaction.type === 'send'
+                      ? transaction.address
+                      : walletAddress;
                     return value.length > 32 ? `${value.slice(0, 18)}…${value.slice(-10)}` : value;
                   })()}
                 </code>
@@ -287,7 +273,10 @@ export function TransactionDetailsDialog({ transaction }: TransactionDetailsDial
                   size="icon"
                   className="h-6 w-6 shrink-0 hover:bg-white/10 text-white"
                   onClick={() => {
-                    navigator.clipboard.writeText(transaction.type === 'send' ? transaction.address : walletAddress);
+                    const value = transaction.type === 'send'
+                      ? transaction.address
+                      : walletAddress;
+                    navigator.clipboard.writeText(value);
                     toast.success('Address copied');
                   }}
                 >
@@ -301,7 +290,7 @@ export function TransactionDetailsDialog({ transaction }: TransactionDetailsDial
               </DetailRow>
             )}
             <DetailRow label="Date">
-              <span className="text-sm text-white">{formatDateWithTime(transaction.timestamp)}</span>
+              <span className="text-sm text-white">{formatDateTime(transaction.timestamp)}</span>
             </DetailRow>
             <DetailRow label="Block">
               <div className="flex items-center gap-1 text-white">
@@ -334,4 +323,6 @@ function DetailRow({ label, children }: DetailRowProps) {
     </div>
   );
 }
+
+
 

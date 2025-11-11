@@ -1,5 +1,8 @@
+'use client';
+
 import { Copy, Trash2, RefreshCw, X, FileSignature, Rocket, Calendar, Users } from "lucide-react";
 import { Button } from "@/ui/button";
+import { formatDateTime } from "@/lib/dateFormat";
 import { Badge } from "@/ui/badge";
 import { Separator } from "@/ui/separator";
 import { Sheet, SheetContent, SheetTrigger } from "@/ui/sheet";
@@ -8,37 +11,12 @@ import { toast } from "sonner";
 import { formatRelativeDate } from "@/lib/utils";
 import { Payroll } from "../types";
 import { TransactionStatusIcon } from "@/ui/TransactionStatusIcon";
-import { useTransactions } from "@/features/wallet";
-import { TransactionDetailsDialog } from "@/features/wallet/TransactionDetailsDialog";
+import { useTransactions } from "@/features/transactions";
+import { TransactionDialog } from "@/features/transactions";
 import { useState } from "react";
 import { StickyNote } from '@/ui/sticky-note';
 
-// Format date as "May 26, 2025"
-function formatDate(date: string | Date): string {
-  const d = new Date(date);
-  return d.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  });
-}
-
-// Format time as "01:00pm"
-function formatTime(date: string | Date): string {
-  const d = new Date(date);
-  return d.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  }).toLowerCase().replace(' ', '');
-}
-
-// Format date and time together
-function formatDateTime(date: string | Date): string {
-  return `${formatDate(date)} • ${formatTime(date)}`;
-}
-
-interface PayrollDetailsDialogProps {
+interface PayrollDialogProps {
   payroll: Payroll;
   onCancel?: (id: string) => void;
   onRestart?: (payroll: Payroll) => void;
@@ -50,7 +28,7 @@ interface PayrollDetailsDialogProps {
   theme?: 'dark' | 'white';
 }
 
-export function PayrollDetailsDialog({ 
+export function PayrollDialog({ 
   payroll, 
   onCancel, 
   onRestart, 
@@ -60,7 +38,7 @@ export function PayrollDetailsDialog({
   isRestarting = false,
   isDeleting = false,
   theme = 'dark'
-}: PayrollDetailsDialogProps) {
+}: PayrollDialogProps) {
   const { data: transactions } = useTransactions();
   const [selectedTransaction, setSelectedTransaction] = useState<{ hash?: string; id?: string } | null>(null);
   
@@ -241,7 +219,7 @@ export function PayrollDetailsDialog({
                 justifyContent: 'center' 
               }}>
                 <Rocket className="h-5 w-5" style={{ color: 'white' }} />
-              </div>
+          </div>
             ) : (
               <TransactionStatusIcon status={getStatusIcon()} />
             )}
@@ -357,8 +335,8 @@ export function PayrollDetailsDialog({
                   <span className={isScheduledStatus ? 'text-white' : 'text-white/70'}>Network Fee (est.)</span>
                   <span className="text-white">{networkFeeEth.toFixed(3)} ETH</span>
                 </div>
-              </div>
             </div>
+          </div>
 
             {/* Scheduled & Signed Info */}
             <div className={`space-y-2 text-sm px-6 ${secondaryTextClass}`}>
@@ -387,7 +365,7 @@ export function PayrollDetailsDialog({
               <p className={`text-[11px] uppercase tracking-wide font-semibold mb-4 ${isScheduledStatus ? 'text-white' : (isWhite ? 'text-gray-500' : 'text-white/80')}`}>
                 Recipients ({payroll.recipients.length})
               </p>
-              <div className="space-y-3">
+            <div className="space-y-3">
                 {payroll.recipients.map((recipient, index) => {
                   const recipientAmount = parseFloat(recipient.amount || '0');
                   const recipientAmountUSD = recipientAmount * 3243.0;
@@ -406,8 +384,8 @@ export function PayrollDetailsDialog({
                   ));
 
                   const isOpen = !!(isSelected && transaction);
-
-                  return (
+ 
+                return (
                     <Sheet 
                       key={recipient.id} 
                       open={isOpen}
@@ -425,7 +403,7 @@ export function PayrollDetailsDialog({
                           if (transaction) {
                             setSelectedTransaction({ hash: transaction.hash, id: transaction.id });
                           } else if (recipient.transactionId) {
-                            console.log('[PayrollDetailsDialog] Transaction not found:', {
+                            console.log('[PayrollDialog] Transaction not found:', {
                               transactionId: recipient.transactionId,
                               availableTransactions: transactions?.length || 0,
                             });
@@ -445,7 +423,7 @@ export function PayrollDetailsDialog({
                                     <span className={`text-xs ${isWhite ? 'text-gray-400' : subtleTextClass}`}>•</span>
                                     <span className={`text-xs truncate ${isWhite ? 'text-gray-600' : subtleTextClass}`}>
                                       {recipient.recipientEmail}
-                                    </span>
+                            </span>
                                   </>
                                 )}
                               </div>
@@ -454,7 +432,7 @@ export function PayrollDetailsDialog({
                                   {recipient.recipientAddress}
                                 </code>
                                 <Button
-                                  type="button"
+                              type="button"
                                   variant="ghost"
                                   size="icon"
                                   className={`h-6 w-6 shrink-0 ${isWhite ? 'text-gray-400 hover:text-gray-700 hover:bg-gray-100' : isScheduledStatus ? 'text-white hover:text-white hover:bg-white/10' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
@@ -482,7 +460,7 @@ export function PayrollDetailsDialog({
                           noOverlay={true}
                           className="w-full sm:w-[500px] sm:left-[1000px] min-w-[300px] h-screen overflow-y-auto bg-[rgba(20,0,35,0.95)] border-white/10 p-0"
                         >
-                          <TransactionDetailsDialog transaction={transaction} />
+                          <TransactionDialog transaction={transaction} />
                         </SheetContent>
                       )}
                       {!transaction && recipient.transactionId && (
@@ -499,30 +477,30 @@ export function PayrollDetailsDialog({
                                 <code className="text-white font-mono text-sm break-all">
                                   {recipient.transactionId}
                                 </code>
-                              </div>
+                      </div>
                               <div>
                                 <p className="text-gray-400 text-sm mb-2">Transaction not found in local cache</p>
-                                <Button
+                      <Button
                                   variant="outline"
-                                  size="sm"
+                        size="sm"
                                   className="w-full gap-2 border-white/20 text-white bg-transparent hover:bg-white/20"
                                   onClick={() => {
                                     window.open(`https://sepolia.etherscan.io/tx/${recipient.transactionId}`, '_blank');
                                   }}
                                 >
                                   View on Etherscan
-                                </Button>
-                              </div>
-                            </div>
+                      </Button>
+                    </div>
+                  </div>
                           </div>
                         </SheetContent>
                       )}
                     </Sheet>
-                  );
-                })}
-              </div>
+                );
+              })}
+               </div>
             </div>
-      </div>
+          </div>
 
             {/* Footer Actions */}
             <div className="p-8 border-t border-white/10 shrink-0 space-y-3">
@@ -539,7 +517,7 @@ export function PayrollDetailsDialog({
                 </Button>
               )}
               {(payroll.status === 'scheduled' || payroll.status === 'signed') && onCancel && (
-                <Button
+            <Button
                   size="lg"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -562,10 +540,11 @@ export function PayrollDetailsDialog({
                   }}
                 >
                   {isCancelling ? 'Cancelling...' : 'Cancel Payroll'}
-                </Button>
+            </Button>
               )}
-            </div>
-    </div>
+        </div>
+        </div>
   );
 }
+
 

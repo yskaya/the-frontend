@@ -2,7 +2,8 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { requireAuth, type User } from '@/features/auth';
 import { GetServerSideProps } from 'next';
 import { queryClient } from '@/lib';
-import { useWallet, useCreateWallet, useSyncTransactions } from '@/features/wallet';
+import { useWallet, useCreateWallet } from '@/features/wallet';
+import { useSyncTransactions } from '@/features/transactions';
 import { Wallet, Users, Send, Share2, LogOut, Plus, Copy, RefreshCw, ScrollText } from 'lucide-react';
 import { Button } from '@/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/ui/sheet';
@@ -10,10 +11,11 @@ import { Avatar, AvatarFallback } from '@/ui/avatar';
 import { Dialog, DialogContent } from '@/ui/dialog';
 import { LogoutButton } from '@/components/LogoutButton';
 import { ContactsPanel } from '@/features/contacts';
-import { TransactionsPanel, SendCryptoDialog, ReceiveCryptoDialog } from '@/features/wallet';
-import { PayrollDialog, ScheduledPaymentsPanel, CompletedPayrollsPanel, PayrollsToSignPanel, PayrollDetailsDialog } from '@/features/scheduled-payments';
-import { TransactionsTabsProvider } from '@/features/wallet/transactions-tabs-context';
+import { SendCryptoDialog, ReceiveCryptoDialog } from '@/features/wallet';
+import { CreatePayrollDialog, ActivePayrollsSection } from '@/features/payrolls';
+import { DashboardHistoryProvider } from '@/pages/DashboardHistoryProvider';
 import { toast } from 'sonner';
+import { DashboardHistory } from './DashboardHistory';
 
 
 interface DashboardProps {
@@ -180,7 +182,7 @@ const DashboardView = ({ initialUser }: DashboardProps) => {
         queryClient.invalidateQueries({ queryKey: ['wallet', userId] }),
         queryClient.invalidateQueries({ queryKey: ['transactions'] }),
         queryClient.invalidateQueries({ queryKey: ['payrolls'] }),
-        queryClient.invalidateQueries({ queryKey: ['scheduled-payments'] }),
+        queryClient.invalidateQueries({ queryKey: ['payroll-payments'] }),
       ]);
       try {
         if (syncTransactions.mutateAsync) {
@@ -319,7 +321,7 @@ const DashboardView = ({ initialUser }: DashboardProps) => {
   };
 
   return (
-    <TransactionsTabsProvider>
+    <DashboardHistoryProvider>
       <div className="min-h-screen bg-gradient-to-b from-black via-[#0f0a1c] to-[#1a102e] text-white">
         {(showPullIndicator || isRefreshing) && (
           <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-gray-800 shadow-lg backdrop-blur">
@@ -456,7 +458,7 @@ const DashboardView = ({ initialUser }: DashboardProps) => {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 gap-10">
               {/* Left Half - Wallet */}
               <div className="wallet-box">
                 <div className="flex flex-col gap-6">
@@ -504,7 +506,7 @@ const DashboardView = ({ initialUser }: DashboardProps) => {
                       <Share2 className="h-5 w-5" />
                       Receive
                     </Button>
-                    <PayrollDialog 
+                    <CreatePayrollDialog 
                       buttonClassName="h-12 gap-2 bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-white hover:from-purple-500/30 hover:to-blue-500/30 border border-purple-500/50 rounded-xl font-semibold"
                       buttonText="Schedule"
                     />
@@ -514,17 +516,13 @@ const DashboardView = ({ initialUser }: DashboardProps) => {
 
               {/* Right Half - Payrolls to Sign */}
               <div>
-                <PayrollsToSignPanel />
+                <ActivePayrollsSection />
               </div>
             </div>
           )}
 
           {/* Transactions - Below */}
-          {wallet && (
-            <div className="mt-8">
-              <TransactionsPanel />
-            </div>
-          )}
+          {wallet && <DashboardHistory className="mt-8" />}
         </main>
 
         {/* Send Dialog */}
@@ -558,21 +556,8 @@ const DashboardView = ({ initialUser }: DashboardProps) => {
           </SheetContent>
         </Sheet>
 
-        {/* Footer */}
-        <footer className="border-t border-white/10 bg-gradient-to-t from-zinc-900/50 to-black/50 backdrop-blur-xl mt-16">
-          <div className="max-w-4xl mx-auto px-6 py-6">
-            <div className="flex items-center justify-center gap-6">
-              <button className="text-sm text-gray-400 hover:text-white transition-colors">
-                Terms
-              </button>
-              <button className="text-sm text-gray-400 hover:text-white transition-colors">
-                Contact
-              </button>
-            </div>
-          </div>
-        </footer>
       </div>
-    </TransactionsTabsProvider>
+    </DashboardHistoryProvider>
   );
 };
 
@@ -617,9 +602,9 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 };
 
 const Dashboard = (props: DashboardProps) => (
-  <TransactionsTabsProvider>
+  <DashboardHistoryProvider>
     <DashboardView {...props} />
-  </TransactionsTabsProvider>
+  </DashboardHistoryProvider>
 );
 
 export default Dashboard;

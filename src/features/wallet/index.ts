@@ -8,8 +8,5 @@ export * from './wallet.api';
 export * from './useWallet';
 
 // Components
-export { TransactionsPanel } from './TransactionsPanel';
-export { TransactionToSignPanel } from './components/TransactionToSignPanel';
 export { SendCryptoDialog } from './SendCryptoDialog';
 export { ReceiveCryptoDialog } from './ReceiveCryptoDialog';
-export { TransactionDetailsDialog } from './TransactionDetailsDialog';

@@ -1,55 +1,55 @@
 /**
- * Scheduled Payments API Client
- * Handles communication with the wallet service scheduled payments endpoints
+ * Payroll Payments API Client
+ * Handles communication with the wallet service payroll payment endpoints
  */
 
 import { api } from '@/lib';
-import type { ScheduledPayment, CreateScheduledPaymentDto, Payroll, CreatePayrollDto } from './types';
+import type { PayrollPayment, CreatePayrollPaymentDto, Payroll, CreatePayrollDto } from './types';
 
 // Use gateway URL (relative path) - the API client already has baseURL set
 // Note: Gateway has global prefix '/api', so we should NOT include '/api' in the path
 // NestJS will handle the global prefix automatically
-const BASE_PATH = '/wallet/scheduled-payments';
+const PAYROLL_PAYMENTS_BASE_PATH = '/wallet/payroll-payments';
 
 /**
- * Create a new scheduled payment
+ * Create a new payroll payment
  */
-export async function createScheduledPayment(
-  data: CreateScheduledPaymentDto
-): Promise<ScheduledPayment> {
-  const response = await api.post<ScheduledPayment>(BASE_PATH, data);
+export async function createPayrollPayment(
+  data: CreatePayrollPaymentDto
+): Promise<PayrollPayment> {
+  const response = await api.post<PayrollPayment>(PAYROLL_PAYMENTS_BASE_PATH, data);
   if (!response.data) {
-    throw new Error('Failed to create scheduled payment');
+    throw new Error('Failed to create payroll payment');
   }
   return response.data;
 }
 
 /**
- * Get all scheduled payments for the current user
+ * Get all payroll payments for the current user
  */
-export async function getScheduledPayments(): Promise<ScheduledPayment[]> {
-  const response = await api.get<ScheduledPayment[]>(BASE_PATH);
+export async function getPayrollPayments(): Promise<PayrollPayment[]> {
+  const response = await api.get<PayrollPayment[]>(PAYROLL_PAYMENTS_BASE_PATH);
   return response.data || [];
 }
 
 /**
- * Get a specific scheduled payment by ID
+ * Get a specific payroll payment by ID
  */
-export async function getScheduledPayment(id: string): Promise<ScheduledPayment> {
-  const response = await api.get<ScheduledPayment>(`${BASE_PATH}/${id}`);
+export async function getPayrollPayment(id: string): Promise<PayrollPayment> {
+  const response = await api.get<PayrollPayment>(`${PAYROLL_PAYMENTS_BASE_PATH}/${id}`);
   if (!response.data) {
-    throw new Error('Scheduled payment not found');
+    throw new Error('Payroll payment not found');
   }
   return response.data;
 }
 
 /**
- * Cancel a scheduled payment (only if pending)
+ * Cancel a payroll payment (only if pending)
  */
-export async function cancelScheduledPayment(id: string): Promise<{ message: string }> {
-  const response = await api.delete<{ message: string }>(`${BASE_PATH}/${id}`);
+export async function cancelPayrollPayment(id: string): Promise<{ message: string }> {
+  const response = await api.delete<{ message: string }>(`${PAYROLL_PAYMENTS_BASE_PATH}/${id}`);
   if (!response.data) {
-    throw new Error('Failed to cancel scheduled payment');
+    throw new Error('Failed to cancel payroll payment');
   }
   return response.data;
 }

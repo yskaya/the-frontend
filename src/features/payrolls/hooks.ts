@@ -1,5 +1,5 @@
 /**
- * React Query hooks for Scheduled Payments
+ * React Query hooks for payroll payments and payrolls
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -7,10 +7,10 @@ import { toast } from 'sonner';
 import { useState, useEffect, useRef } from 'react';
 import { useWindowVisibility } from '@/hooks/useWindowVisibility';
 import {
-  createScheduledPayment,
-  getScheduledPayments,
-  getScheduledPayment,
-  cancelScheduledPayment,
+  createPayrollPayment,
+  getPayrollPayments,
+  getPayrollPayment,
+  cancelPayrollPayment,
   createPayroll,
   getPayrolls,
   getPayroll,
@@ -18,25 +18,25 @@ import {
   cancelPayroll,
   deletePayroll,
 } from './api';
-import type { CreateScheduledPaymentDto, ScheduledPayment, CreatePayrollDto, Payroll } from './types';
+import type { CreatePayrollPaymentDto, PayrollPayment, CreatePayrollDto, Payroll } from './types';
 
-const QUERY_KEY = 'scheduled-payments';
+const PAYROLL_PAYMENTS_QUERY_KEY = 'payroll-payments';
 
 /**
- * Get all scheduled payments with smart polling and window visibility
+ * Get all payroll payments with smart polling and window visibility
  * - Normal: 60 seconds
  * - Payroll due soon (within 1 min) or processing: 5 seconds
  * - Paused when window not active
  */
-export function useScheduledPayments() {
+export function usePayrollPayments() {
   const queryClient = useQueryClient();
   const isVisible = useWindowVisibility();
   const [shouldPollFrequently, setShouldPollFrequently] = useState(false);
   const hasRefetchedOnFocus = useRef(false);
 
-  const { data: payments, isLoading, error } = useQuery<ScheduledPayment[]>({
-    queryKey: [QUERY_KEY],
-    queryFn: getScheduledPayments,
+  const { data: payments, isLoading, error } = useQuery<PayrollPayment[]>({
+    queryKey: [PAYROLL_PAYMENTS_QUERY_KEY],
+    queryFn: getPayrollPayments,
     staleTime: 1000 * 45, // Increased from 30s to 45s to reduce unnecessary refetches
     // Smart polling: 10s if payroll due/processing (increased from 5s), 60s otherwise, but ONLY if window is visible
     refetchInterval: () => {
@@ -78,7 +78,7 @@ export function useScheduledPayments() {
   // Refetch immediately when window becomes visible
   useEffect(() => {
     if (isVisible && !hasRefetchedOnFocus.current) {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [PAYROLL_PAYMENTS_QUERY_KEY] });
       queryClient.invalidateQueries({ queryKey: ['wallet'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       hasRefetchedOnFocus.current = true;
@@ -97,13 +97,13 @@ export function useScheduledPayments() {
 }
 
 /**
- * Manual refresh scheduled payments
+ * Manual refresh payroll payments
  */
-export function useRefreshScheduledPayments() {
+export function useRefreshPayrollPayments() {
   const queryClient = useQueryClient();
   
   return () => {
-    queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
+    queryClient.invalidateQueries({ queryKey: [PAYROLL_PAYMENTS_QUERY_KEY] });
     queryClient.invalidateQueries({ queryKey: ['wallet'] });
     queryClient.invalidateQueries({ queryKey: ['transactions'] });
     toast.success('Payrolls refreshed');
@@ -111,30 +111,30 @@ export function useRefreshScheduledPayments() {
 }
 
 /**
- * Get a specific scheduled payment
+ * Get a specific payroll payment
  */
-export function useScheduledPayment(id: string) {
-  return useQuery<ScheduledPayment>({
-    queryKey: [QUERY_KEY, id],
-    queryFn: () => getScheduledPayment(id),
+export function usePayrollPayment(id: string) {
+  return useQuery<PayrollPayment>({
+    queryKey: [PAYROLL_PAYMENTS_QUERY_KEY, id],
+    queryFn: () => getPayrollPayment(id),
     enabled: !!id,
   });
 }
 
 /**
- * Create a new scheduled payment
+ * Create a new payroll payment
  */
-export function useCreateScheduledPayment() {
+export function useCreatePayrollPayment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: CreateScheduledPaymentDto) => createScheduledPayment(data),
+    mutationFn: (data: CreatePayrollPaymentDto) => createPayrollPayment(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
-      toast.success('Payment scheduled successfully');
+      queryClient.invalidateQueries({ queryKey: [PAYROLL_PAYMENTS_QUERY_KEY] });
+      toast.success('Payroll payment scheduled successfully');
     },
     onError: (error: any) => {
-      toast.error('Failed to schedule payment', {
+      toast.error('Failed to schedule payroll payment', {
         description: error.message || 'An error occurred',
       });
     },
@@ -142,19 +142,19 @@ export function useCreateScheduledPayment() {
 }
 
 /**
- * Cancel a scheduled payment
+ * Cancel a payroll payment
  */
-export function useCancelScheduledPayment() {
+export function useCancelPayrollPayment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => cancelScheduledPayment(id),
+    mutationFn: (id: string) => cancelPayrollPayment(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
-      toast.success('Scheduled payment cancelled');
+      queryClient.invalidateQueries({ queryKey: [PAYROLL_PAYMENTS_QUERY_KEY] });
+      toast.success('Payroll payment cancelled');
     },
     onError: (error: any) => {
-      toast.error('Failed to cancel payment', {
+      toast.error('Failed to cancel payroll payment', {
         description: error.message || 'An error occurred',
       });
     },
@@ -250,9 +250,9 @@ export function useCreatePayroll() {
   return useMutation({
     mutationFn: (data: CreatePayrollDto) => createPayroll(data),
     onSuccess: () => {
-      // Invalidate both payrolls and scheduled payments queries
+      // Invalidate both payroll and payroll payment queries
       queryClient.invalidateQueries({ queryKey: [PAYROLL_QUERY_KEY] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [PAYROLL_PAYMENTS_QUERY_KEY] });
       toast.success('Payroll created successfully');
     },
     onError: (error: any) => {
