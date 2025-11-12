@@ -26,6 +26,7 @@ export const LogoutButton: React.FC<LogoutButtonProps> = ({
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user_id');
+        localStorage.removeItem('auth_user');
         console.log('[LogoutButton] ✅ localStorage tokens cleared');
       }
       
@@ -45,6 +46,7 @@ export const LogoutButton: React.FC<LogoutButtonProps> = ({
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user_id');
+        localStorage.removeItem('auth_user');
         setUser(null);
         window.location.href = '/login';
       }

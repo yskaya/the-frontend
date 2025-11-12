@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 /**
  * Hook to detect window visibility and handle focus/blur events
@@ -7,19 +7,19 @@ import { useState, useEffect } from 'react';
 export function useWindowVisibility() {
   const [isVisible, setIsVisible] = useState(true);
 
+  const handleVisibilityChange = useCallback(() => {
+    setIsVisible(!document.hidden);
+  }, []);
+
+  const handleFocus = useCallback(() => {
+    setIsVisible(true);
+  }, []);
+
+  const handleBlur = useCallback(() => {
+    setIsVisible(false);
+  }, []);
+
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      setIsVisible(!document.hidden);
-    };
-
-    const handleFocus = () => {
-      setIsVisible(true);
-    };
-
-    const handleBlur = () => {
-      setIsVisible(false);
-    };
-
     // Listen to visibility API (works when tab is switched)
     document.addEventListener('visibilitychange', handleVisibilityChange);
     

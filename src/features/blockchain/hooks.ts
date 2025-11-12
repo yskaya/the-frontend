@@ -13,11 +13,15 @@ import {
 } from './api';
 import type { Wallet, Transaction } from './types';
 
+type UseWalletQueryOptions = {
+  enabled?: boolean;
+};
+
 /**
  * Wallet Hooks
  */
 
-export const useWalletQuery = (userId?: string) => {
+export const useWalletQuery = (userId?: string, options: UseWalletQueryOptions = {}) => {
   const queryClient = useQueryClient();
   const isVisible = useWindowVisibility();
 
@@ -33,12 +37,15 @@ export const useWalletQuery = (userId?: string) => {
       return result.wallet;
     },
     staleTime: 1000 * 60,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
     refetchInterval: () => {
       if (!isVisible) return false;
       return 1000 * 60;
     },
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: false,
+    enabled: options.enabled ?? true,
   });
 };
 
@@ -93,14 +100,21 @@ export const useSendCrypto = () => {
  * Transaction Hooks
  */
 
-export const useTransactionsQuery = () => {
+type UseTransactionsQueryOptions = {
+  enabled?: boolean;
+};
+
+export const useTransactionsQuery = (options: UseTransactionsQueryOptions = {}) => {
   return useQuery<Transaction[]>({
     queryKey: ['transactions'],
     queryFn: getTransactions,
     staleTime: 1000 * 30,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
     refetchInterval: false,
     refetchIntervalInBackground: false,
     refetchOnWindowFocus: false,
+    enabled: options.enabled ?? true,
   });
 };
 
@@ -132,8 +146,7 @@ export const useSyncTransactions = () => {
   >({
     mutationFn: () => syncTransactions(userId),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['wallet'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'], refetchType: 'active' });
       if (data.newTransactions > 0) {
         toast.success(
           `Synced ${data.newTransactions} new transaction${data.newTransactions !== 1 ? 's' : ''} from blockchain`,

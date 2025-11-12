@@ -1,28 +1,17 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useCreatePayroll } from './hooks';
-import type { PayrollPaymentFormData } from './types';
+import { CalendarClock, User, X } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/ui/button';
 import { Input } from '@/ui/input';
 import { Label } from '@/ui/label';
-import { Textarea } from '@/ui/textarea';
 import { Separator } from '@/ui/separator';
 import { Sheet, SheetContent, SheetTrigger } from '@/ui/sheet';
 import { StickyNote } from '@/ui/sticky-note';
-import { toast } from 'sonner';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/ui/select';
-import { CalendarClock, User, X } from 'lucide-react';
-import { Search } from 'lucide-react';
-
-// Import contacts API
 import { useContacts } from '@/features/contacts';
+import { useCreatePayroll } from './hooks';
+import type { PayrollPaymentFormData } from './types';
 
 interface CreatePayrollDialogProps {
   onSuccess?: () => void;

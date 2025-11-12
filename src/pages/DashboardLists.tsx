@@ -31,7 +31,7 @@ export function DashboardLists() {
 
   return (
     <div
-      className={cn("relative")}
+      className="relative"
       style={containerHeight ? { height: containerHeight } : undefined}
     >
       {panels.map(({ key, Component }) => (
@@ -44,14 +44,13 @@ export function DashboardLists() {
           }}
           onClick={() => setActiveTab(key)}
           className={cn(
-            "absolute w-full flex flex-col origin-top rounded-[48px] py-16 px-6 sm:px-8 border border-white/10 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform",
+            "absolute w-full flex flex-col origin-top rounded-[48px] py-16 px-6 sm:px-8 border border-white/10 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]",
             activeTab === key
               ? "top-[0px] z-30 scale-100 bg-[rgba(31,0,55,0.95)]"
-              : "top-[-55px] z-20 scale-[0.7] py-6 cursor-pointer bg-[#0a0018]"
+              : "top-[-55px] z-20 scale-[0.7] max-h-screen py-6 cursor-pointer bg-[#0a0018]"
           )}
-          style={activeTab === key ? undefined : { maxHeight: "100vh" }}
         >
-          <div className="w-full max-w-[700px] mx-auto ">
+          <div className="w-full max-w-[700px] mx-auto">
             <Component /> 
           </div>
         </div>

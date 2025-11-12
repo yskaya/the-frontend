@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
-import { AppProps } from 'next/app';
+import type { AppProps } from 'next/app';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Handlee, Nunito_Sans, Montserrat } from 'next/font/google';
 
+import type { User } from '@/features/auth';
 import { AuthProvider } from '@/features/auth';
 import { ContactsProvider } from '@/features/contacts';
 import { NotificationProvider, NotificationStack } from '@/components/Notification';
@@ -12,6 +13,12 @@ import { queryClient, api } from '@/lib';
 import { Toaster } from '@/ui/sonner';
 
 import '../globals.css';
+
+type PaypayPageProps = {
+  serverUser?: User | null;
+};
+
+type PaypayAppProps = AppProps<PaypayPageProps>;
 
 // Load fonts for login page
 const handlee = Handlee({
@@ -35,7 +42,7 @@ const montserrat = Montserrat({
   display: 'swap',
 });
 
-function AppContent({ Component, pageProps }: AppProps) {
+function AppContent({ Component, pageProps }: PaypayAppProps) {
   const { handleApiError } = useErrorHandling();
 
   // Setup API error handler
@@ -51,16 +58,18 @@ function AppContent({ Component, pageProps }: AppProps) {
   );
 }
 
-export default function App(props: AppProps) {
+export default function App(props: PaypayAppProps) {
   // Suppress API/Network errors from Next.js dev overlay
   useErrorSuppressor();
+
+  const serverUser = props.pageProps?.serverUser ?? null;
 
   return (
     <div className={`${handlee.variable} ${nunitoSans.variable} ${montserrat.variable}`}>
       <QueryClientProvider client={queryClient}>
         <ErrorBoundary>
           <NotificationProvider>
-            <AuthProvider>
+            <AuthProvider serverUser={serverUser}>
               <ContactsProvider>
                 <AppContent {...props} />
                 <Toaster />

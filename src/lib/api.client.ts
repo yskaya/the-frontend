@@ -166,6 +166,10 @@ export class ApiClient {
         return { error: errorMessage };
       }
       
+      if (axiosError.response?.status === 401) {
+        console.debug('[ApiClient] 401 detected');
+      }
+
       // Use error handler if available to show notifications (unless silent)
       if (!silent && this.errorHandler) {
         this.errorHandler(axiosError);

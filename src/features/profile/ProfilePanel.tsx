@@ -1,20 +1,35 @@
-import { useState } from "react";
-import type { User } from "@/features/auth";
+import { useCallback, useState } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/ui/sheet";
 import { Button } from "@/ui/button";
 import { Avatar, AvatarFallback } from "@/ui/avatar";
 import { ContactsPanel } from "@/features/contacts";
 import { LogoutButton } from "@/components/LogoutButton";
 import { Users, LogOut } from "lucide-react";
+import { useClientAuth } from "@/features/auth";
+import type { WalletSectionHandle } from "@/features/blockchain";
 
 interface ProfilePanelProps {
-  user: User;
-  onSendTo: (address: string, name: string) => void;
+  walletSectionRef: React.RefObject<WalletSectionHandle | null>;
 }
 
-export function ProfilePanel({ user, onSendTo }: ProfilePanelProps) {
+export function ProfilePanel({ walletSectionRef }: ProfilePanelProps) {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [contactsOpen, setContactsOpen] = useState(false);
+  const { user } = useClientAuth();
+
+  const handleSendTo = useCallback(
+    (address: string, name: string) => {
+      walletSectionRef.current?.openSendTo(address, name);
+    },
+    [walletSectionRef],
+  );
+
+  const avatarInitial = user?.email ? user.email.charAt(0).toUpperCase() : "U";
+  const displayName =
+    user?.firstName && user?.lastName
+      ? `${user.firstName} ${user.lastName}`
+      : user?.email || "User";
+  const email = user?.email || "";
 
   return (
     <Sheet open={userMenuOpen} onOpenChange={setUserMenuOpen}>
@@ -26,7 +41,7 @@ export function ProfilePanel({ user, onSendTo }: ProfilePanelProps) {
         >
           <Avatar className="h-10 w-10">
             <AvatarFallback className="bg-white/10 text-white border border-white/20">
-              {user.email ? user.email.charAt(0).toUpperCase() : 'U'}
+              {avatarInitial}
             </AvatarFallback>
           </Avatar>
         </Button>
@@ -37,18 +52,15 @@ export function ProfilePanel({ user, onSendTo }: ProfilePanelProps) {
           <div className="flex flex-col items-center gap-4 pt-8">
             <Avatar className="h-20 w-20">
               <AvatarFallback className="bg-white/10 text-white text-2xl border-2 border-white/20">
-                {user.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                {avatarInitial}
               </AvatarFallback>
             </Avatar>
             <div className="text-center">
               <p className="text-white font-semibold text-lg">
-                {user.firstName && user.lastName 
-                  ? `${user.firstName} ${user.lastName}`
-                  : user.email || 'User'
-                }
+                {displayName}
               </p>
               <p className="text-gray-400 text-sm mt-1">
-                {user.email || ''}
+                {email}
               </p>
             </div>
           </div>
@@ -68,7 +80,7 @@ export function ProfilePanel({ user, onSendTo }: ProfilePanelProps) {
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-full sm:w-[500px] min-w-[300px] right-[500px] h-screen overflow-y-auto bg-[rgba(20,0,35,0.95)] border-white/10 p-0">
-              <ContactsPanel onSendTo={onSendTo} />
+              <ContactsPanel onSendTo={handleSendTo} />
             </SheetContent>
           </Sheet>
 

@@ -8,7 +8,7 @@ import type { Transaction } from "@/features/blockchain/types";
 import { cn } from "@/lib/utils";
 import { TransactionItem } from "./TransactionItem";
 import { useState } from "react";
-import { useDashboardContext } from "@/features/dashboard/DashboardProvider";
+import { useDashboardContext } from "@/pages/DashboardProvider";
 
 interface TransactionsActivityProps {
   embedded?: boolean;
@@ -103,7 +103,7 @@ export function TransactionsActivity({
 
   return (
     <div className={cn("w-full mx-auto flex flex-col", activeTab === 'txs' ? "gap-8" : "gap-4", className)}>
-      <div className="font-[var(--font-nunito-sans)] text-[12px] font-semibold uppercase tracking-[0.4em] text-white/60">
+      <div className="font-[var(--font-nunito-sans)] text-[12px] font-semibold uppercase tracking-[0.1em] text-white/60">
         Transaction history
       </div>
       {content}

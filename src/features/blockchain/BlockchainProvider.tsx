@@ -1,6 +1,7 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import type { Wallet, Transaction } from './types';
 import { useWalletQuery, useTransactionsQuery } from './hooks';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface QueryState<T> {
   data: T;
@@ -38,8 +39,11 @@ const normalizeError = (error: unknown): Error | null => {
 };
 
 export const BlockchainProvider = ({ children, userId }: BlockchainProviderProps) => {
+  const queryClient = useQueryClient();
   const walletQuery = useWalletQuery(userId);
-  const transactionsQuery = useTransactionsQuery();
+  const transactionsQuery = useTransactionsQuery({ enabled: false });
+  const transactionsData =
+    transactionsQuery.data ?? queryClient.getQueryData<Transaction[]>(['transactions']);
 
   const value = useMemo<BlockchainContextValue>(
     () => ({
@@ -50,9 +54,9 @@ export const BlockchainProvider = ({ children, userId }: BlockchainProviderProps
         error: normalizeError(walletQuery.error),
       },
       transactions: {
-        data: transactionsQuery.data,
-        isLoading: transactionsQuery.isLoading,
-        error: normalizeError(transactionsQuery.error),
+        data: transactionsData,
+        isLoading: walletQuery.isLoading || transactionsQuery.isLoading,
+        error: normalizeError(transactionsQuery.error ?? walletQuery.error),
       },
     }),
     [
@@ -60,7 +64,7 @@ export const BlockchainProvider = ({ children, userId }: BlockchainProviderProps
       walletQuery.data,
       walletQuery.isLoading,
       walletQuery.error,
-      transactionsQuery.data,
+      transactionsData,
       transactionsQuery.isLoading,
       transactionsQuery.error,
     ],
@@ -80,31 +84,34 @@ export const useBlockchainContext = () => {
 
 export const useWallet = (userId?: string) => {
   const context = useContext(BlockchainContext);
-  const query = useWalletQuery(userId);
+  const shouldUseContext =
+    !!context && (typeof userId === 'undefined' || context.userId === userId);
+  const query = useWalletQuery(userId, { enabled: !shouldUseContext });
 
-  if (!context || (typeof userId !== 'undefined' && context.userId !== userId)) {
-    return {
-      data: query.data,
-      isLoading: query.isLoading,
-      error: normalizeError(query.error),
-    };
+  if (shouldUseContext && context) {
+    return context.wallet;
   }
 
-  return context.wallet;
+  return {
+    data: query.data,
+    isLoading: query.isLoading,
+    error: normalizeError(query.error),
+  };
 };
 
 export const useTransactions = () => {
   const context = useContext(BlockchainContext);
-  const query = useTransactionsQuery();
+  const shouldUseContext = !!context;
+  const query = useTransactionsQuery({ enabled: !shouldUseContext });
 
-  if (!context) {
-    return {
-      data: query.data,
-      isLoading: query.isLoading,
-      error: normalizeError(query.error),
-    };
+  if (shouldUseContext && context) {
+    return context.transactions;
   }
 
-  return context.transactions;
+  return {
+    data: query.data,
+    isLoading: query.isLoading,
+    error: normalizeError(query.error),
+  };
 };
 

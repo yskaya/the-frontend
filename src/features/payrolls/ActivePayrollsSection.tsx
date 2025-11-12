@@ -28,7 +28,7 @@ export function ActivePayrollsSection() {
     <div className="flex w-full justify-center">
       <div className="flex w-full max-w-[1200px] flex-col gap-[42px] rounded-[48px] bg-[rgba(31,0,55,0.7)] px-20 py-[60px]">
         <div className="flex items-center gap-2">
-          <h2 className="font-[var(--font-nunito-sans)] text-[12px] font-semibold uppercase tracking-[0.4em] text-white/60">
+          <h2 className="font-[var(--font-nunito-sans)] text-[12px] font-semibold uppercase tracking-[0.1em] text-white/60">
             Active Payrolls
           </h2>
         </div>

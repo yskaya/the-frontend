@@ -131,7 +131,8 @@
 
 @layer base {
   body {
-    @apply bg-background text-white;
+    background-color: #000000;
+    color: #ffffff;
   }
 }
 
@@ -194,4 +195,12 @@
 
 html {
   font-size: var(--font-size);
+}
+
+.font-handlee {
+  font-family: var(--font-handlee), "Handlee", cursive;
+}
+
+.font-nunito {
+  font-family: var(--font-nunito-sans), "Nunito Sans", sans-serif;
 }

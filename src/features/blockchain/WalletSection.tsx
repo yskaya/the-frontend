@@ -6,6 +6,8 @@ import { CreatePayrollDialog } from "@/features/payrolls";
 import { SendCryptoDialog } from "./SendCryptoDialog";
 import { ReceiveCryptoDialog } from "./ReceiveCryptoDialog";
 import { toast } from "sonner";
+import { useCreateWallet } from "./hooks";
+import { useBlockchainContext } from "./BlockchainProvider";
 
 const ETH_PRICE = 3243.0;
 
@@ -18,11 +20,6 @@ interface WalletSectionProps {
   wallet: Wallet;
 }
 
-interface WalletNotFoundProps {
-  onCreateWallet: () => void;
-  isCreatingWallet: boolean;
-}
-
 export const WalletLoading = () => (
   <div className="flex w-full min-h-[300px] flex-col gap-[42px] rounded-[48px] bg-[rgba(31,0,55,0.7)] px-20 py-[60px]">
     <div className="flex items-center justify-center h-64">
@@ -31,27 +28,40 @@ export const WalletLoading = () => (
   </div>
 );
 
-export const WalletNotFound = ({ onCreateWallet, isCreatingWallet }: WalletNotFoundProps) => (
-  <div className="flex w-full min-h-[300px] flex-col gap-[42px] rounded-[48px] bg-[rgba(31,0,55,0.7)] px-20 py-[60px] text-center">
-    <div className="max-w-md mx-auto">
-      <div className="h-20 w-20 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center mx-auto mb-6">
-        <WalletIcon className="h-10 w-10 text-white" />
+export const WalletNotFound = () => {
+  const { userId } = useBlockchainContext();
+  const createWalletMutation = useCreateWallet(userId);
+
+  const handleCreateWallet = () => {
+    if (!userId) {
+      return;
+    }
+
+    createWalletMutation.mutate();
+  };
+
+  return (
+    <div className="flex w-full min-h-[300px] flex-col gap-[42px] rounded-[48px] bg-[rgba(31,0,55,0.7)] px-20 py-[60px] text-center">
+      <div className="max-w-md mx-auto">
+        <div className="h-20 w-20 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center mx-auto mb-6">
+          <WalletIcon className="h-10 w-10 text-white" />
+        </div>
+        <h2 className="text-2xl font-bold text-white mb-3">No Wallet Found</h2>
+        <p className="text-gray-400 mb-6">
+          Create a new Ethereum wallet to start sending and receiving crypto
+        </p>
+        <Button
+          onClick={handleCreateWallet}
+          disabled={!userId || createWalletMutation.isPending}
+          className="h-12 gap-2 bg-white text-black hover:bg-gray-100 rounded-xl font-semibold"
+        >
+          <Plus className="h-5 w-5" />
+          {createWalletMutation.isPending ? "Creating Wallet..." : "Create Wallet"}
+        </Button>
       </div>
-      <h2 className="text-2xl font-bold text-white mb-3">No Wallet Found</h2>
-      <p className="text-gray-400 mb-6">
-        Create a new Ethereum wallet to start sending and receiving crypto
-      </p>
-      <Button
-        onClick={onCreateWallet}
-        disabled={isCreatingWallet}
-        className="h-12 gap-2 bg-white text-black hover:bg-gray-100 rounded-xl font-semibold"
-      >
-        <Plus className="h-5 w-5" />
-        {isCreatingWallet ? "Creating Wallet..." : "Create Wallet"}
-      </Button>
     </div>
-  </div>
-);
+  );
+};
 
 export const WalletSection = forwardRef<WalletSectionHandle, WalletSectionProps>(
   ({ wallet }, ref) => {

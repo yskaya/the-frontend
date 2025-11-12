@@ -10,7 +10,7 @@ import { Payroll } from "./types";
 import { PayrollItem } from "./PayrollItem";
 import { PayrollDialog } from "./PayrollDialog";
 import { cn } from "@/lib/utils";
-import { useDashboardContext } from "@/features/dashboard/DashboardProvider";
+import { useDashboardContext } from "@/pages/DashboardProvider";
 
 interface PayrollsActivityProps {
   embedded?: boolean;
@@ -181,7 +181,7 @@ export function PayrollsActivity({
 
   return (
     <div className={cn("w-full mx-auto flex flex-col", activeTab === 'prls' ? "gap-8" : "gap-4")}>
-      <h2 className="font-[var(--font-nunito-sans)] text-[12px] font-semibold uppercase tracking-[0.4em] text-white/60">
+      <h2 className="font-[var(--font-nunito-sans)] text-[12px] font-semibold uppercase tracking-[0.1em] text-white/60">
         Payroll Activity
       </h2>
       {content}

@@ -56,11 +56,11 @@ Need to:
 import { requireAuth, type User } from '@/features/auth';
 
 interface Props {
-  initialUser: User;
+  serverUser: User;
 }
 
-const Dashboard = ({ initialUser }: Props) => {
-  return <div>Welcome {initialUser.firstName}!</div>;
+const Dashboard = ({ serverUser }: Props) => {
+  return <div>Welcome {serverUser.firstName}!</div>;
 };
 
 // ✅ Server validates - instant redirect if not logged in
@@ -70,7 +70,7 @@ export const getServerSideProps = async (context) => {
   if ('props' in result && result.props) {
     return {
       props: {
-        initialUser: result.props.user,
+        serverUser: result.props.user,
       },
     };
   }
@@ -112,10 +112,10 @@ export default LoginPage;
 
 ```tsx
 // Server component (page)
-const Dashboard = ({ initialUser }: Props) => {
+const Dashboard = ({ serverUser }: Props) => {
   return (
     <div>
-      <h1>Welcome {initialUser.firstName}</h1>
+      <h1>Welcome {serverUser.firstName}</h1>
       {/* Client component for interactivity */}
       <LogoutButton />
     </div>

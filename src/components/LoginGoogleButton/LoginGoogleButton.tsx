@@ -41,6 +41,13 @@ export const LoginGoogleButton: React.FC<LoginGoogleButtonProps> = ({
           } else {
             console.error('[LoginGoogleButton] ⚠️  No tokens in response - this should not happen!');
           }
+
+          try {
+            localStorage.setItem('auth_user', JSON.stringify(data.user));
+          } catch (storageError) {
+            console.error('[LoginGoogleButton] ⚠️ Failed to persist auth_user in localStorage:', storageError);
+            localStorage.removeItem('auth_user');
+          }
           
           setUser(data.user);
           

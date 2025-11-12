@@ -1,10 +1,6 @@
 import { api } from '@/lib';
 import { Contact } from './types';
 
-// Use gateway URL - API client already has baseURL with /api prefix
-// Paths should NOT include /api since it's already in baseURL
-const CONTACTS_API_BASE = '';
-
 /**
  * Request/Response types (API-specific)
  */
@@ -25,7 +21,7 @@ export interface UpdateContactRequest {
  * Get all contacts
  */
 export const getContacts = async (): Promise<Contact[]> => {
-  const response = await api.get<Contact[]>(`${CONTACTS_API_BASE}/contacts`);
+  const response = await api.get<Contact[]>('/contacts');
   return response.data || [];
 };
 
@@ -33,7 +29,7 @@ export const getContacts = async (): Promise<Contact[]> => {
  * Create a new contact
  */
 export const createContact = async (data: CreateContactRequest): Promise<Contact> => {
-  const response = await api.post<Contact>(`${CONTACTS_API_BASE}/contacts`, data);
+  const response = await api.post<Contact>('/contacts', data);
   if (!response.data) {
     throw new Error('Failed to create contact');
   }
@@ -44,7 +40,7 @@ export const createContact = async (data: CreateContactRequest): Promise<Contact
  * Update a contact
  */
 export const updateContact = async (id: string, data: UpdateContactRequest): Promise<Contact> => {
-  const response = await api.patch<Contact>(`${CONTACTS_API_BASE}/contacts/${id}`, data);
+  const response = await api.patch<Contact>(`/contacts/${id}`, data);
   if (!response.data) {
     throw new Error('Failed to update contact');
   }
@@ -55,6 +51,6 @@ export const updateContact = async (id: string, data: UpdateContactRequest): Pro
  * Delete a contact
  */
 export const deleteContact = async (id: string): Promise<void> => {
-  await api.delete(`${CONTACTS_API_BASE}/contacts/${id}`);
+  await api.delete(`/contacts/${id}`);
   return;
 };

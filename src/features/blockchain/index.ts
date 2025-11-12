@@ -19,7 +19,7 @@ export {
   type WalletSectionHandle,
 } from './WalletSection';
 
-export { NetworkPanel } from './WalletNetworksPanel';
+export { WalletNetworkPanel } from './WalletNetworksPanel';
 
 export { TransactionsActivity } from './TransactionsActivity';
 export { TransactionDialog } from './TransactionDialog';

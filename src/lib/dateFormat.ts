@@ -4,10 +4,11 @@ const DEFAULT_LOCALE = 'en-US';
 
 export function formatDate(date: string | number | Date, locale: string = DEFAULT_LOCALE) {
   const value = new Date(date);
+  const now = new Date();
   return value.toLocaleDateString(locale, {
     month: 'short',
     day: 'numeric',
-    year: 'numeric',
+    year: value.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
   });
 }
 
@@ -62,14 +63,7 @@ export function formatRelativeDate(date: string | Date): string {
   }
 
   // 30+ days: show actual date
-  return then.toLocaleString('en-US', { 
-    month: 'short', 
-    day: 'numeric', 
-    year: then.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
-    hour: 'numeric', 
-    minute: '2-digit',
-    hour12: true 
-  });
+  return formatDateTime(then);
 }
 
 
