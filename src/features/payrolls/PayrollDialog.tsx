@@ -8,11 +8,9 @@ import { Separator } from "@/ui/separator";
 import { Sheet, SheetContent, SheetTrigger } from "@/ui/sheet";
 import { Dialog, DialogContent, DialogTrigger } from "@/ui/dialog";
 import { toast } from "sonner";
-import { formatRelativeDate } from "@/lib/utils";
-import { Payroll } from "../types";
+import { Payroll } from "./types";
 import { TransactionStatusIcon } from "@/ui/TransactionStatusIcon";
-import { useTransactions } from "@/features/transactions";
-import { TransactionDialog } from "@/features/transactions";
+import { useTransactions, TransactionDialog } from "@/features/blockchain";
 import { useState } from "react";
 import { StickyNote } from '@/ui/sticky-note';
 
@@ -206,20 +204,11 @@ export function PayrollDialog({
       {/* Fixed Header */}
       <div className={`p-8 pb-4 border-b ${isWhite ? 'border-gray-200' : 'border-white/10'}`}>
         <div className="flex items-center gap-4">
-          <div className="flex items-center justify-center w-14 h-14">
+          <div className="flex h-14 w-14 items-center justify-center">
             {payroll.status === 'signed' ? (
-              <div className="transaction-icon-container" style={{ 
-                backgroundColor: 'rgb(168, 85, 247)', // Purple background
-                border: '2px solid rgba(0, 0, 0, 0.1)', 
-                borderRadius: '50%', 
-                width: '48px', 
-                height: '48px', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center' 
-              }}>
-                <Rocket className="h-5 w-5" style={{ color: 'white' }} />
-          </div>
+              <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-black/10 bg-[rgb(168,85,247)]">
+                <Rocket className="h-5 w-5 text-white" />
+              </div>
             ) : (
               <TransactionStatusIcon status={getStatusIcon()} />
             )}

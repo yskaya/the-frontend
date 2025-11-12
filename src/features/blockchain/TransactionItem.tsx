@@ -22,23 +22,48 @@ function resolveStatus(status: string, labels?: string[]) {
   return 'completed';
 }
 
-function getIcon(status: ReturnType<typeof resolveStatus>, type: TransactionItemProps['type']) {
+function getStyles(status: ReturnType<typeof resolveStatus>, type: TransactionItemProps['type']) {
   if (status === 'pending' || status === 'processing') {
-    return <RefreshCw className="h-5 w-5 text-white" />;
+    return {
+      container: 'bg-[#734c09]',
+      icon: 'text-[#fe9902]',
+    };
+  }
+
+  if (status === 'failed' || status === 'cancelled') {
+    return {
+      container: 'bg-[#481818]',
+      icon: 'text-[#ef4444]',
+    };
   }
 
   if (type === 'receive') {
-    return <ArrowDownLeft className="h-5 w-5 text-white" />;
+    return {
+      container: 'bg-[#1d2f48]',
+      icon: 'text-[#439eef]',
+    };
   }
 
-  return <ArrowUpRight className="h-5 w-5" />;
+  return {
+    container: 'bg-[#183e26]',
+    icon: 'text-[#00e476]',
+  };
 }
 
-function getStatusClass(status: ReturnType<typeof resolveStatus>, type: TransactionItemProps['type']) {
-  if (status === 'pending' || status === 'processing') return 'transaction-icon-pending';
-  if (status === 'failed' || status === 'cancelled') return 'transaction-icon-failed';
-  if (type === 'receive') return 'transaction-icon-received';
-  return 'transaction-icon-sent';
+function getIcon(
+  status: ReturnType<typeof resolveStatus>,
+  type: TransactionItemProps['type'],
+  iconClass: string,
+) {
+  if (status === 'pending' || status === 'processing') {
+    return <RefreshCw className={`h-5 w-5 ${iconClass}`} />;
+  }
+
+  if (type === 'receive') {
+    return <ArrowDownLeft className={`h-5 w-5 ${iconClass}`} />;
+  }
+
+  return <ArrowUpRight className={`h-5 w-5 ${iconClass}`} />;
 }
 
 function getLabel(status: ReturnType<typeof resolveStatus>, type: TransactionItemProps['type']) {
@@ -60,6 +85,7 @@ export function TransactionItem({
 }: TransactionItemProps) {
   const normalizedStatus = resolveStatus(status, labels);
   const displayLabel = getLabel(normalizedStatus, type);
+  const { container, icon } = getStyles(normalizedStatus, type);
 
   const numericAmount = Number.parseFloat(amount || "0");
   const formattedAsset = Number.isNaN(numericAmount)
@@ -79,8 +105,8 @@ export function TransactionItem({
 
   return (
     <>
-      <div className={`transaction-icon-container ${getStatusClass(normalizedStatus, type)}`}>
-        {getIcon(normalizedStatus, type)}
+      <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-black/10 ${container}`}>
+        {getIcon(normalizedStatus, type, icon)}
       </div>
 
       <div className="flex-1 min-w-0">
@@ -94,11 +120,11 @@ export function TransactionItem({
         </div>
       </div>
 
-      <div className="transaction-amount-container">
-        <p className="transaction-usd-amount">
+      <div className="shrink-0 text-right">
+        <p className="mb-1 font-[var(--font-nunito-sans)] text-base font-semibold text-white">
           ${formattedUsd}
         </p>
-        <p className="transaction-amount">
+        <p className="font-[var(--font-nunito-sans)] text-xs text-gray-500">
           {formattedAsset}
         </p>
       </div>

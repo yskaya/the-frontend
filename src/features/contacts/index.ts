@@ -1,11 +1,11 @@
 // Shared Types
-export type { Contact } from './contacts.types';
+export type { Contact } from './types';
 
 // API (includes request/response types)
-export * from './contacts.api';
+export * from './api';
 
 // React Query Hooks
-export * from './useContacts';
+export * from './hooks';
 
 // Context Provider
 export { ContactsProvider, useContactsContext } from './ContactsProvider';

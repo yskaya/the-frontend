@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useCreatePayroll } from '../hooks';
-import type { PayrollPaymentFormData } from '../types';
+import { useCreatePayroll } from './hooks';
+import type { PayrollPaymentFormData } from './types';
 import { Button } from '@/ui/button';
 import { Input } from '@/ui/input';
 import { Label } from '@/ui/label';

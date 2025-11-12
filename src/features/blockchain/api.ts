@@ -1,16 +1,5 @@
-import { Wallet, Transaction } from './wallet.types';
+import { Wallet, Transaction } from './types';
 import { api } from '@/lib';
-
-// Use gateway URL - gateway already has /api prefix
-// For direct fetch calls, use gateway URL with /api prefix (if not already present)
-const getApiBase = () => {
-  let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5555';
-  // Remove trailing slash if present
-  apiUrl = apiUrl.replace(/\/$/, '');
-  // Add /api only if not already present
-  return apiUrl.endsWith('/api') ? apiUrl : `${apiUrl}/api`;
-};
-const WALLET_API_BASE = getApiBase();
 
 // Helper to get user ID from cookie
 const getUserId = (): string => {

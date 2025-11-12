@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLogout } from '@/features/auth/useAuth';
+import { useLogout } from '@/features/auth/hooks';
 import { useAuthContext } from '@/features/auth/AuthProvider';
 
 interface LogoutButtonProps {

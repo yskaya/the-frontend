@@ -4,7 +4,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useWindowVisibility } from '@/hooks/useWindowVisibility';
 import {
   createPayrollPayment,
@@ -32,7 +32,6 @@ export function usePayrollPayments() {
   const queryClient = useQueryClient();
   const isVisible = useWindowVisibility();
   const [shouldPollFrequently, setShouldPollFrequently] = useState(false);
-  const hasRefetchedOnFocus = useRef(false);
 
   const { data: payments, isLoading, error } = useQuery<PayrollPayment[]>({
     queryKey: [PAYROLL_PAYMENTS_QUERY_KEY],
@@ -47,7 +46,7 @@ export function usePayrollPayments() {
       return shouldPollFrequently ? 1000 * 10 : 1000 * 60;
     },
     refetchIntervalInBackground: false,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
   });
 
   // Check if any payroll is due soon or processing
@@ -74,20 +73,6 @@ export function usePayrollPayments() {
     
     setShouldPollFrequently(hasDueSoon || hasProcessing);
   }, [payments, queryClient]);
-
-  // Refetch immediately when window becomes visible
-  useEffect(() => {
-    if (isVisible && !hasRefetchedOnFocus.current) {
-      queryClient.invalidateQueries({ queryKey: [PAYROLL_PAYMENTS_QUERY_KEY] });
-      queryClient.invalidateQueries({ queryKey: ['wallet'] });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      hasRefetchedOnFocus.current = true;
-    }
-    
-    if (!isVisible) {
-      hasRefetchedOnFocus.current = false;
-    }
-  }, [isVisible, queryClient]);
 
   return {
     data: payments,
@@ -173,7 +158,6 @@ export function usePayrolls() {
   const queryClient = useQueryClient();
   const isVisible = useWindowVisibility();
   const [shouldPollFrequently, setShouldPollFrequently] = useState(false);
-  const hasRefetchedOnFocus = useRef(false);
 
   const { data: payrolls, isLoading, error, refetch } = useQuery<Payroll[]>({
     queryKey: [PAYROLL_QUERY_KEY],
@@ -185,7 +169,7 @@ export function usePayrolls() {
       return shouldPollFrequently ? 1000 * 60 : false;
     },
     refetchIntervalInBackground: false,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
   });
 
   // Check if any payroll needs polling (1 min before execution until 10 mins after)
@@ -218,20 +202,6 @@ export function usePayrolls() {
     
     setShouldPollFrequently(hasActivePolling);
   }, [payrolls, queryClient]);
-
-  // Refetch immediately when window becomes visible
-  useEffect(() => {
-    if (isVisible && !hasRefetchedOnFocus.current) {
-      queryClient.invalidateQueries({ queryKey: [PAYROLL_QUERY_KEY] });
-      queryClient.invalidateQueries({ queryKey: ['wallet'] });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      hasRefetchedOnFocus.current = true;
-    }
-    
-    if (!isVisible) {
-      hasRefetchedOnFocus.current = false;
-    }
-  }, [isVisible, queryClient]);
 
   return {
     data: payrolls,

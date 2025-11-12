@@ -3,24 +3,26 @@
 import { Loader2 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/ui/sheet";
 import { TransactionDialog } from "./TransactionDialog";
-import { useTransactions } from "./hooks";
-import type { Transaction } from "@/features/wallet";
+import { useTransactions } from "./BlockchainProvider";
+import type { Transaction } from "@/features/blockchain/types";
 import { cn } from "@/lib/utils";
 import { TransactionItem } from "./TransactionItem";
 import { useState } from "react";
+import { useDashboardContext } from "@/features/dashboard/DashboardProvider";
 
-interface TransactionsHistoryProps {
+interface TransactionsActivityProps {
   embedded?: boolean;
   showHeader?: boolean;
   className?: string;
 }
 
-export function TransactionsHistory({
+export function TransactionsActivity({
   className,
-}: TransactionsHistoryProps) {
+}: TransactionsActivityProps) {
   const { data: transactions, isLoading, error } = useTransactions();
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
-  
+  const { activeTab } = useDashboardContext();
+
   const renderTransactionsColumn = () => {
     if (isLoading) {
       return (
@@ -41,7 +43,7 @@ export function TransactionsHistory({
 
     if (!transactions || transactions.length === 0) {
       return (
-        <div className="placeholder">
+        <div className="rounded-[12px] p-8 text-center">
           <p className="text-gray-400">No transactions yet</p>
           <p className="text-gray-500 text-sm mt-1">Your transaction history will appear here</p>
         </div>
@@ -49,7 +51,7 @@ export function TransactionsHistory({
     }
 
     return (
-      <div className="flex-1 overflow-y-auto transaction-list-container">
+      <div className="flex-1 overflow-y-auto space-y-8">
         {transactions.map((tx) => (
           <Sheet
             key={tx.id}
@@ -64,7 +66,7 @@ export function TransactionsHistory({
           >
             <SheetTrigger asChild>
               <button
-                className="transaction-item-button"
+                className="flex w-full items-center gap-[10px] text-left transition-opacity hover:opacity-80"
                 onClick={(event) => {
                   event.preventDefault();
                   setSelectedTransaction(tx);
@@ -97,11 +99,13 @@ export function TransactionsHistory({
   };
 
   const content = renderTransactionsColumn();
-  const gapClass = selectedTransaction ? "gap-8" : "gap-4";
+  
 
   return (
-    <div className={cn("max-w-[700px] w-full mx-auto flex flex-col", gapClass, className)}>
-      <div className="payrolls-to-sign-heading">Transaction history</div>
+    <div className={cn("w-full mx-auto flex flex-col", activeTab === 'txs' ? "gap-8" : "gap-4", className)}>
+      <div className="font-[var(--font-nunito-sans)] text-[12px] font-semibold uppercase tracking-[0.4em] text-white/60">
+        Transaction history
+      </div>
       {content}
     </div>
   );

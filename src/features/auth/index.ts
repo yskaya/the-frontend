@@ -1,11 +1,11 @@
 // Shared Types
-export type { User } from './auth.types';
+export type { User } from './types';
 
 // API (includes request/response types)
-export * from './auth.api';
+export * from './api';
 
 // React Query Hooks
-export * from './useAuth';
+export * from './hooks';
 
 // Server-side utilities
 export * from './serverAuth';

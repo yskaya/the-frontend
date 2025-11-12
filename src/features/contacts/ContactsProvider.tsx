@@ -1,5 +1,5 @@
 import { createContext, useContext, useReducer, ReactNode } from 'react';
-import { Contact } from './contacts.types';
+import { Contact } from './types';
 
 // ============================================
 // Action Types

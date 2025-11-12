@@ -1,5 +1,5 @@
 import { api } from '@/lib';
-import { User } from './auth.types';
+import { User } from './types';
 
 /**
  * Request/Response types (API-specific)

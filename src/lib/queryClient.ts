@@ -12,7 +12,7 @@ export const queryClient = new QueryClient({
       gcTime: 1000 * 60 * 10, // Cache kept for 10 minutes
       
       // Refetching
-      refetchOnWindowFocus: true, // Refetch when user returns to tab
+      refetchOnWindowFocus: false,
       refetchOnReconnect: true, // Refetch when internet reconnects
       
       // No automatic retries

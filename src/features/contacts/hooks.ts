@@ -8,8 +8,8 @@ import {
   deleteContact,
   type CreateContactRequest,
   type UpdateContactRequest,
-} from './contacts.api';
-import { Contact } from './contacts.types';
+} from './api';
+import { Contact } from './types';
 
 /**
  * Get all contacts

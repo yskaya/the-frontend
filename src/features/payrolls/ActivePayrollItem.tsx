@@ -2,7 +2,7 @@
 
 import { Users, Rocket, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { PayrollStatus } from "../types";
+import type { PayrollStatus } from "./types";
 import { formatDateTime } from "@/lib/dateFormat";
 
 interface ActivePayrollItemProps {

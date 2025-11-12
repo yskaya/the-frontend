@@ -1,41 +1,85 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { requireAuth, type User } from '@/features/auth';
 import { GetServerSideProps } from 'next';
 import { queryClient } from '@/lib';
-import { useWallet, useCreateWallet } from '@/features/wallet';
-import { useSyncTransactions } from '@/features/transactions';
-import { Wallet, Users, Send, Share2, LogOut, Plus, Copy, RefreshCw, ScrollText } from 'lucide-react';
-import { Button } from '@/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/ui/sheet';
-import { Avatar, AvatarFallback } from '@/ui/avatar';
-import { Dialog, DialogContent } from '@/ui/dialog';
-import { LogoutButton } from '@/components/LogoutButton';
-import { ContactsPanel } from '@/features/contacts';
-import { SendCryptoDialog, ReceiveCryptoDialog } from '@/features/wallet';
-import { CreatePayrollDialog, ActivePayrollsSection } from '@/features/payrolls';
-import { DashboardHistoryProvider } from '@/pages/DashboardHistoryProvider';
-import { toast } from 'sonner';
-import { DashboardHistory } from './DashboardHistory';
-
+import {
+  useCreateWallet,
+  NetworkPanel,
+  WalletSection,
+  WalletNotFound,
+  WalletLoading,
+  WalletSectionHandle,
+} from '@/features/blockchain';
+import { PaypayLogo } from '@/components/PaypayLogo';
+import { ActivePayrollsSection } from '@/features/payrolls';
+import { RefreshBanner } from '@/components/RefreshBanner';
+import { DashboardProvider } from '@/features/dashboard/DashboardProvider';
+import { DashboardLists } from '@/features/dashboard/DashboardLists';
+import { useRefreshAll } from '@/features/dashboard/useRefreshAll';
+import { ProfilePanel } from '@/features/dashboard/ProfilePanel';
+import { BlockchainProvider } from '@/features/blockchain';
 
 interface DashboardProps {
   initialUser: User | null;
 }
 
+interface DashboardContentProps {
+  user: User;
+}
+
+const DashboardContent = ({ user }: DashboardContentProps) => {
+  const walletSectionRef = useRef<WalletSectionHandle>(null);
+  const { wallet, walletLoading, isRefreshing, showPullIndicator } = useRefreshAll(user.id);
+  const createWalletMutation = useCreateWallet(user.id);
+
+  const handleOpenSendTo = (address: string, name: string) => {
+    walletSectionRef.current?.openSendTo(address, name);
+  };
+
+  return (
+    <DashboardProvider>
+      <div className="min-h-screen bg-gradient-to-b from-black via-[#0f0a1c] to-[#1a102e] text-white">
+        <RefreshBanner isRefreshing={showPullIndicator || isRefreshing} />
+        <header className="border-b border-white/10 bg-gradient-to-b from-black/60 to-black/20 backdrop-blur-xl">
+          <div className="max-w-[1200px] mx-auto px-6 py-4">
+            <div className="flex items-center justify-between">
+              <NetworkPanel networkName={wallet?.network || 'Sepolia'} />
+              <PaypayLogo size="sm" />
+              <ProfilePanel user={user} onSendTo={handleOpenSendTo} />
+            </div>
+          </div>
+        </header>
+
+        <main className="max-w-[1200px] mx-auto px-6 py-8 flex flex-col gap-10">
+          {walletLoading ? (
+            <WalletLoading />
+          ) : !wallet ? (
+            <WalletNotFound
+              onCreateWallet={() => createWalletMutation.mutate()}
+              isCreatingWallet={createWalletMutation.isPending}
+            />
+          ) : (
+            <div className="grid grid-cols-2 gap-10">
+              <WalletSection ref={walletSectionRef} wallet={wallet} />
+              <ActivePayrollsSection />
+            </div>
+          )}
+
+          {wallet && <DashboardLists />}
+        </main>
+      </div>
+    </DashboardProvider>
+  );
+};
+
 /**
  * Dashboard page - matches FigmaFiles/App.tsx styling with dark theme
  */
 const DashboardView = ({ initialUser }: DashboardProps) => {
-  const [receiveOpen, setReceiveOpen] = useState(false);
-  const [sendOpen, setSendOpen] = useState(false);
-  const [sendRecipient, setSendRecipient] = useState<{ address: string; name: string } | null>(null);
-  const [contactsOpen, setContactsOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [isClientAuthValid, setIsClientAuthValid] = useState<boolean | null>(null);
   const [clientUser, setClientUser] = useState<User | null>(initialUser);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [showPullIndicator, setShowPullIndicator] = useState(false);
-  const lastRefreshRef = useRef(0);
+  const user = initialUser && initialUser.id ? initialUser : clientUser;
+  const userId = user?.id;
   
   // Client-side auth validation fallback (for when cookies are blocked or deleted)
   useEffect(() => {
@@ -66,7 +110,7 @@ const DashboardView = ({ initialUser }: DashboardProps) => {
       console.log('[Dashboard] ✅ Tokens found in localStorage, validating...');
       console.log('[Dashboard] Token preview:', accessToken.substring(0, 50) + '...');
       try {
-        const { validate } = await import('@/features/auth/auth.api');
+        const { validate } = await import('@/features/auth/api');
         const user = await validate();
         console.log('[Dashboard] Validate returned:', {
           hasUser: !!user,
@@ -161,114 +205,12 @@ const DashboardView = ({ initialUser }: DashboardProps) => {
     });
   }, [initialUser]);
   
-  // Use clientUser if server-side user is not available (cookies blocked or deleted)
-  const user = initialUser && initialUser.id ? initialUser : clientUser;
-  
-  // CRITICAL: All hooks must be called BEFORE any conditional returns
-  // This ensures hooks are called in the same order every render
-  // Use optional userId - hooks will handle undefined gracefully
-  const userId = user?.id;
-  const { data: wallet, isLoading: walletLoading } = useWallet(userId);
-  const createWalletMutation = useCreateWallet(userId);
-  const syncTransactions = useSyncTransactions();
-  const hasSyncedOnLogin = useRef(false);
-
-  const refreshAll = useCallback(async () => {
-    if (isRefreshing) return;
-    setIsRefreshing(true);
-    try {
-      await Promise.allSettled([
-        queryClient.invalidateQueries({ queryKey: ['wallet'] }),
-        queryClient.invalidateQueries({ queryKey: ['wallet', userId] }),
-        queryClient.invalidateQueries({ queryKey: ['transactions'] }),
-        queryClient.invalidateQueries({ queryKey: ['payrolls'] }),
-        queryClient.invalidateQueries({ queryKey: ['payroll-payments'] }),
-      ]);
-      try {
-        if (syncTransactions.mutateAsync) {
-          await syncTransactions.mutateAsync();
-        } else {
-          syncTransactions.mutate();
-        }
-      } catch (error) {
-        console.error('[Dashboard] Sync transactions failed', error);
-      }
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [isRefreshing, queryClient, syncTransactions, userId]);
-  
-  const handlePullRefresh = useCallback(() => {
-    if (isRefreshing) return;
-    const now = Date.now();
-    if (now - lastRefreshRef.current < 1500) return;
-    lastRefreshRef.current = now;
-    setShowPullIndicator(true);
-    refreshAll().finally(() => {
-      setTimeout(() => {
-        setShowPullIndicator(false);
-      }, 600);
-    });
-  }, [isRefreshing, refreshAll]);
-  
   // Pre-populate auth cache (MUST be called before conditional returns)
   useEffect(() => {
     if (user) {
       queryClient.setQueryData(['auth', 'session'], user);
     }
   }, [user]);
-  
-  // Auto-sync transactions on login (only once) - MUST be called before conditional returns
-  useEffect(() => {
-    if (wallet && !hasSyncedOnLogin.current && !walletLoading) {
-      hasSyncedOnLogin.current = true;
-      console.log('[Dashboard] Auto-syncing transactions on login...');
-      syncTransactions.mutate();
-    }
-  }, [wallet, walletLoading, syncTransactions]);
-
-  useEffect(() => {
-    const handleWheel = (event: WheelEvent) => {
-      if (window.scrollY <= 0 && event.deltaY < -35) {
-        handlePullRefresh();
-      }
-    };
-
-    let touchStartY: number | null = null;
-
-    const handleTouchStart = (event: TouchEvent) => {
-      if (window.scrollY <= 0) {
-        touchStartY = event.touches[0].clientY;
-      } else {
-        touchStartY = null;
-      }
-    };
-
-    const handleTouchMove = (event: TouchEvent) => {
-      if (touchStartY === null) return;
-      const delta = event.touches[0].clientY - touchStartY;
-      if (delta > 90) {
-        touchStartY = null;
-        handlePullRefresh();
-      }
-    };
-
-    const handleTouchEnd = () => {
-      touchStartY = null;
-    };
-
-    window.addEventListener('wheel', handleWheel, { passive: true });
-    window.addEventListener('touchstart', handleTouchStart, { passive: true });
-    window.addEventListener('touchmove', handleTouchMove, { passive: true });
-    window.addEventListener('touchend', handleTouchEnd);
-
-    return () => {
-      window.removeEventListener('wheel', handleWheel);
-      window.removeEventListener('touchstart', handleTouchStart);
-      window.removeEventListener('touchmove', handleTouchMove);
-      window.removeEventListener('touchend', handleTouchEnd);
-    };
-  }, [handlePullRefresh]);
   
   // Now safe to do conditional returns AFTER all hooks are called
   if (isClientAuthValid === false) {
@@ -300,264 +242,10 @@ const DashboardView = ({ initialUser }: DashboardProps) => {
     return null; // Shouldn't happen, but TypeScript needs this
   }
 
-  // Handler to open send dialog with pre-filled recipient
-  const handleOpenSendTo = (address: string, name: string) => {
-    setSendRecipient({ address, name });
-    setSendOpen(true);
-    // Keep contacts panel open - only the contact detail dialog closes
-  };
-
-  const walletAddress = wallet?.address || "";
-  const balance = wallet?.balance || "0";
-  // Calculate USD value using same conversion rate as other places (3243.0)
-  const ETH_PRICE = 3243.0;
-  const balanceUSD = (parseFloat(balance) * ETH_PRICE).toFixed(2);
-
-  const copyAddress = () => {
-    if (walletAddress) {
-      navigator.clipboard.writeText(walletAddress);
-      toast.success('Address copied to clipboard!');
-    }
-  };
-
   return (
-    <DashboardHistoryProvider>
-      <div className="min-h-screen bg-gradient-to-b from-black via-[#0f0a1c] to-[#1a102e] text-white">
-        {(showPullIndicator || isRefreshing) && (
-          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-gray-800 shadow-lg backdrop-blur">
-            <ScrollText className="h-4 w-4" />
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span className="text-sm font-medium">
-              {isRefreshing ? 'Refreshing…' : 'Refreshing…'}
-            </span>
-          </div>
-        )}
-        <header className="border-b border-white/10 bg-gradient-to-b from-black/60 to-black/20 backdrop-blur-xl">
-          <div className="max-w-[1200px] mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
-              {/* Left - Menu */}
-              <div className="flex gap-3 items-center">
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10">
-                  <div className="h-2 w-2 rounded-full bg-green-500" />
-                  <p className="text-xs font-medium text-white">
-                    {wallet?.network || 'Sepolia'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Center - PayPay Logo */}
-              <div className="flex-1 flex justify-center">
-                <div className="paypay-logo-container" style={{ fontSize: '27px' }}>
-                  <span className="text-white">pay</span>
-                  <span className="paypay-logo-purple">pay</span>
-                </div>
-              </div>
-
-              {/* Right - Avatar */}
-              <Sheet open={userMenuOpen} onOpenChange={setUserMenuOpen}>
-                <SheetTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-10 w-10 rounded-full p-0 hover:bg-white/10 ml-10"
-                  >
-                    <Avatar className="h-10 w-10">
-                      <AvatarFallback className="bg-white/10 text-white border border-white/20">
-                        {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </SheetTrigger>
-                       <SheetContent side="right" className="w-full sm:w-[500px] min-w-[300px] bg-[rgba(20,0,35,0.95)] border-white/10">
-                         <div className="space-y-6 p-8">
-                           {/* User Info */}
-                           <div className="flex flex-col items-center gap-4 pt-8">
-                             <Avatar className="h-20 w-20">
-                               <AvatarFallback className="bg-white/10 text-white text-2xl border-2 border-white/20">
-                                 {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
-                               </AvatarFallback>
-                             </Avatar>
-                             <div className="text-center">
-                               <p className="text-white font-semibold text-lg">
-                                 {user?.firstName && user?.lastName 
-                                   ? `${user.firstName} ${user.lastName}`
-                                   : user?.email || 'User'
-                                 }
-                               </p>
-                               <p className="text-gray-400 text-sm mt-1">
-                                 {user?.email || ''}
-                               </p>
-                             </div>
-                           </div>
-
-                           {/* Separator */}
-                           <div className="border-t border-white/10"></div>
-
-                           {/* Contacts Link */}
-                           <Sheet open={contactsOpen} onOpenChange={setContactsOpen}>
-                             <SheetTrigger asChild>
-                               <Button
-                                 variant="ghost"
-                                 className="w-full justify-start text-white hover:bg-white/10 transition-colors cursor-pointer flex items-center gap-2 px-4 py-3 rounded-lg"
-                               >
-                                 <Users className="h-4 w-4" />
-                                 Contacts
-                               </Button>
-                             </SheetTrigger>
-                             <SheetContent side="right" className="w-full sm:w-[500px] min-w-[300px] right-[500px] h-screen overflow-y-auto bg-[rgba(20,0,35,0.95)] border-white/10 p-0">
-                               <ContactsPanel onSendTo={handleOpenSendTo} />
-                             </SheetContent>
-                           </Sheet>
-
-                           {/* Separator */}
-                           <div className="border-t border-white/10"></div>
-
-                           {/* Actions */}
-                           <div className="space-y-2 flex justify-center">
-                             <LogoutButton 
-                               className="text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors cursor-pointer flex items-center gap-2 px-4 py-3 rounded-lg"
-                             >
-                               <LogOut className="h-4 w-4" />
-                               Exit
-                             </LogoutButton>
-                           </div>
-                         </div>
-                       </SheetContent>
-              </Sheet>
-            </div>
-          </div>
-        </header>
-
-        {/* Main Content */}
-        <main className="max-w-[1200px] mx-auto px-6 py-8">
-          {/* Big Balance Widget or Create Wallet */}
-          {walletLoading ? (
-            <div className="wallet-box">
-              <div className="flex items-center justify-center h-64">
-                <p className="text-gray-400">Loading wallet...</p>
-              </div>
-            </div>
-          ) : !wallet ? (
-            <div className="wallet-box text-center">
-              <div className="max-w-md mx-auto">
-                <div className="h-20 w-20 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center mx-auto mb-6">
-                  <Wallet className="h-10 w-10 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold text-white mb-3">No Wallet Found</h2>
-                <p className="text-gray-400 mb-6">
-                  Create a new Ethereum wallet to start sending and receiving crypto
-                </p>
-                <Button
-                  onClick={() => createWalletMutation.mutate()}
-                  disabled={createWalletMutation.isPending}
-                  className="h-12 gap-2 bg-white text-black hover:bg-gray-100 rounded-xl font-semibold"
-                >
-                  <Plus className="h-5 w-5" />
-                  {createWalletMutation.isPending ? 'Creating Wallet...' : 'Create Wallet'}
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 gap-10">
-              {/* Left Half - Wallet */}
-              <div className="wallet-box">
-                <div className="flex flex-col gap-6">
-                  {/* Wallet Address with Network */}
-                  <div className="flex items-center gap-2">
-                    <code className="text-xs text-gray-400 font-mono">
-                      {walletAddress.slice(0, 10)}...{walletAddress.slice(-8)}
-                    </code>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={copyAddress}
-                      className="h-6 w-6 rounded-md bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white"
-                    >
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                  </div>
-
-                  {/* Balance */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-5xl font-bold text-white">
-                        ${balanceUSD}
-                      </p>
-                    </div>
-                    <p className="text-xl text-gray-400">
-                      {balance}{" "}
-                      <span className="text-lg text-gray-500">ETH</span>
-                    </p>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="grid grid-cols-3 gap-3">
-                    <Button
-                      onClick={() => setSendOpen(true)}
-                      className="h-12 gap-2 bg-white text-black hover:bg-gray-100 rounded-xl font-semibold"
-                    >
-                      <Send className="h-5 w-5" />
-                      Send
-                    </Button>
-                    <Button
-                      onClick={() => setReceiveOpen(true)}
-                      className="h-12 gap-2 bg-white/10 text-white hover:bg-white/20 border border-white/30 rounded-xl font-semibold"
-                    >
-                      <Share2 className="h-5 w-5" />
-                      Receive
-                    </Button>
-                    <CreatePayrollDialog 
-                      buttonClassName="h-12 gap-2 bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-white hover:from-purple-500/30 hover:to-blue-500/30 border border-purple-500/50 rounded-xl font-semibold"
-                      buttonText="Schedule"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Half - Payrolls to Sign */}
-              <div>
-                <ActivePayrollsSection />
-              </div>
-            </div>
-          )}
-
-          {/* Transactions - Below */}
-          {wallet && <DashboardHistory className="mt-8" />}
-        </main>
-
-        {/* Send Dialog */}
-        <Sheet open={sendOpen} onOpenChange={(open) => {
-          setSendOpen(open);
-          if (!open) setSendRecipient(null);
-        }}>
-          <SheetContent 
-            side="bottom" 
-            className="w-full max-w-[600px] mx-auto h-full max-h-screen overflow-hidden bg-transparent border-0 p-0"
-          >
-            <div className="h-full bg-white overflow-y-auto p-6">
-              <SendCryptoDialog 
-                recipientAddress={sendRecipient?.address}
-                recipientName={sendRecipient?.name}
-                onSuccess={() => setSendOpen(false)}
-              />
-            </div>
-          </SheetContent>
-        </Sheet>
-
-        {/* Receive Dialog */}
-        <Sheet open={receiveOpen} onOpenChange={setReceiveOpen}>
-          <SheetContent 
-            side="bottom" 
-            className="w-full max-w-[600px] mx-auto h-full max-h-screen overflow-hidden bg-transparent border-0 p-0"
-          >
-            <div className="h-full bg-white overflow-y-auto p-6">
-              <ReceiveCryptoDialog walletAddress={walletAddress} />
-            </div>
-          </SheetContent>
-        </Sheet>
-
-      </div>
-    </DashboardHistoryProvider>
+    <BlockchainProvider userId={user.id}>
+      <DashboardContent user={user} />
+    </BlockchainProvider>
   );
 };
 
@@ -602,9 +290,9 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 };
 
 const Dashboard = (props: DashboardProps) => (
-  <DashboardHistoryProvider>
+  <DashboardProvider>
     <DashboardView {...props} />
-  </DashboardHistoryProvider>
+  </DashboardProvider>
 );
 
 export default Dashboard;

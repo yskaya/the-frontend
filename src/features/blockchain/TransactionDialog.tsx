@@ -6,9 +6,9 @@ import { Badge } from "@/ui/badge";
 import { toast } from "sonner";
 import { TransactionStatusIcon } from "@/ui/TransactionStatusIcon";
 import { useAuthContext } from "@/features/auth";
-import { useWallet } from "@/features/wallet";
+import { useWallet } from "./BlockchainProvider";
 import type { ReactNode } from "react";
-import type { Transaction } from "@/features/wallet";
+import type { Transaction } from "@/features/blockchain/types";
 import { formatDateTime } from "@/lib/dateFormat";
 
 interface TransactionDialogProps {
@@ -218,9 +218,7 @@ export function TransactionDialog({ transaction }: TransactionDialogProps) {
             <DetailRow label="Tx Hash">
               <div className="flex items-center gap-2">
                 <code className="text-sm text-white font-mono break-all flex-1">
-                  {transaction.hash.length > 18
-                    ? `${transaction.hash.slice(0, 10)}…${transaction.hash.slice(-6)}`
-                    : transaction.hash}
+                  {transaction.hash.slice(0, 10)}…{transaction.hash.slice(-10)}
                 </code>
                 <Button
                   variant="ghost"
@@ -286,21 +284,19 @@ export function TransactionDialog({ transaction }: TransactionDialogProps) {
             </DetailRow>
             {transaction.recipientName && (
               <DetailRow label="Recipient">
-                <span className="text-sm text-gray-300">{transaction.recipientName}</span>
+                {transaction.recipientName}
               </DetailRow>
             )}
             <DetailRow label="Date">
-              <span className="text-sm text-white">{formatDateTime(transaction.timestamp)}</span>
+              {formatDateTime(transaction.timestamp)}
             </DetailRow>
             <DetailRow label="Block">
-              <div className="flex items-center gap-1 text-white">
-                <Blocks className="h-3 w-3 text-gray-400" />
+              <div className="flex items-center gap-1">
+                <Blocks className="h-3 w-3" />
                 <span>{transaction.blockNumber}</span>
               </div>
             </DetailRow>
-            <DetailRow label="Nonce">
-              <span className="text-sm text-white">{transaction.nonce}</span>
-            </DetailRow>
+            <DetailRow label="Nonce">{transaction.nonce}</DetailRow>
           </div>
         </div>
       </div>

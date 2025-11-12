@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useGoogleLogin } from '@react-oauth/google';
-import { useLogin } from '@/features/auth/useAuth';
+import { useLogin } from '@/features/auth/hooks';
 import { useAuthContext } from '@/features/auth/AuthProvider';
 import { LoginGoogleButtonSkeleton } from './LoginGoogleButtonSkeleton';
 
@@ -107,16 +107,9 @@ export const LoginGoogleButton: React.FC<LoginGoogleButtonProps> = ({
 
   return (
     <button
-      className="bg-white text-black flex items-center justify-center hover:bg-gray-100 transition-colors cursor-pointer"
+      className="flex h-14 w-[300px] cursor-pointer items-center justify-center gap-2 rounded-[14px] bg-white px-6 py-[10px] text-black transition-colors hover:bg-gray-100"
       onClick={handleGoogleLogin}
       type="button"
-      style={{
-        width: '300px',
-        height: '56px',
-        borderRadius: '14px',
-        padding: '10px 24px',
-        gap: '8px',
-      }}
     >
       {/* Google G Logo */}
       <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
@@ -127,7 +120,7 @@ export const LoginGoogleButton: React.FC<LoginGoogleButtonProps> = ({
           <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.948 7.29C4.66 5.157 6.65 3.58 9 3.58z" fill="#EA4335"/>
         </g>
       </svg>
-      <span className="google-button-text">
+      <span className="font-[var(--font-montserrat)] text-[20px] font-medium leading-6 tracking-[-0.02em]">
         Sign in with Google
       </span>
     </button>

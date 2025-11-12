@@ -1,5 +1,5 @@
 import { api } from '@/lib';
-import { Contact } from './contacts.types';
+import { Contact } from './types';
 
 // Use gateway URL - API client already has baseURL with /api prefix
 // Paths should NOT include /api since it's already in baseURL

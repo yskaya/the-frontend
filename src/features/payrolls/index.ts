@@ -45,9 +45,9 @@ export {
 } from './hooks';
 
 // UI Components
-export { ActivePayrollsSection } from './components/ActivePayrollsSection';
-export { CreatePayrollDialog } from './components/CreatePayrollDialog';
-export { PayrollDialog } from './components/PayrollDialog';
-export { PayrollsHistory } from './components/PayrollsHistory';
-export { SignPayrollDialog } from './components/ActivePayrollDialog';
+export { ActivePayrollsSection } from './ActivePayrollsSection';
+export { CreatePayrollDialog } from './CreatePayrollDialog';
+export { PayrollDialog } from './PayrollDialog';
+export { PayrollsActivity } from './PayrollsActivity';
+
 

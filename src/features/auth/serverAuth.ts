@@ -4,7 +4,7 @@
  */
 
 import { GetServerSidePropsContext } from 'next';
-import type { User } from './auth.types';
+import type { User } from './types';
 
 /**
  * Validates user authentication on the server side

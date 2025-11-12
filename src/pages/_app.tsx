@@ -12,7 +12,6 @@ import { queryClient, api } from '@/lib';
 import { Toaster } from '@/ui/sonner';
 
 import '../globals.css';
-import '../components.css';
 
 // Load fonts for login page
 const handlee = Handlee({

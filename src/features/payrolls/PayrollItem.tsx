@@ -2,7 +2,7 @@
 
 import { TransactionStatusIcon } from "@/ui/TransactionStatusIcon";
 import { formatDateTime } from "@/lib/dateFormat";
-import type { PayrollStatus } from "../types";
+import type { PayrollStatus } from "./types";
 import { Users } from "lucide-react";
 
 interface PayrollItemProps {
@@ -15,25 +15,6 @@ interface PayrollItemProps {
     usd: string;
     eth: string;
   };
-}
-
-function getStatusClass(status: PayrollStatus) {
-  switch (status) {
-    case "processing":
-      return "transaction-icon-pending";
-    case "completed":
-      return "transaction-icon-sent";
-    case "failed":
-    case "cancelled":
-      return "transaction-icon-failed";
-    case "signed":
-    case "scheduled":
-      return "transaction-icon-scheduled";
-    case "created":
-      return "transaction-icon-created";
-    default:
-      return "transaction-icon-pending";
-  }
 }
 
 function getIconStatus(status: PayrollStatus) {
@@ -65,9 +46,7 @@ export function PayrollItem({
 }: PayrollItemProps) {
   return (
     <>
-      <div className={`transaction-icon-container ${getStatusClass(status)}`}>
-        <TransactionStatusIcon status={getIconStatus(status)} />
-      </div>
+      <TransactionStatusIcon status={getIconStatus(status)} />
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
