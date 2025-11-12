@@ -194,23 +194,29 @@ export function SendCryptoDialog({
       return;
     }
 
-    try {
-      await sendCryptoMutation.mutateAsync({
+    sendCryptoMutation.mutate(
+      {
         to: finalAddress,
         amount,
-      });
+      },
+      {
+        onSuccess: () => {
+          setInputValue("");
+          setAmount("");
+          setSelectedContactId(null);
+          setHasUserEdited(false);
 
-      setInputValue("");
-      setAmount("");
-      setSelectedContactId(null);
-      setHasUserEdited(false);
+          onOpenChange(false);
 
-      if (onSuccess) {
-        onSuccess();
+          if (onSuccess) {
+            onSuccess();
+          }
+        },
+        onError: (error) => {
+          console.error("Send transaction error:", error);
+        },
       }
-    } catch (error) {
-      console.error("Send transaction error:", error);
-    }
+    );
   };
 
   const handleClose = () => {
