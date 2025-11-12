@@ -10,20 +10,33 @@ import type { User } from './types';
  * Validates user authentication on the server side
  * Returns user data if authenticated, null if not
  */
+function normalizeBaseUrl(url: string) {
+  const trimmed = url.replace(/\/$/, '');
+  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+}
+
+function resolveUsersServiceBaseUrls(): string[] {
+  const configured = process.env.NEXT_PUBLIC_USERS_SERVICE_URL || 'http://localhost:5002';
+  const internal =
+    process.env.USERS_SERVICE_INTERNAL_URL ||
+    process.env.USERS_SERVICE_URL ||
+    configured.replace('localhost', '127.0.0.1');
+
+  const candidates = [internal, configured].map((url) => normalizeBaseUrl(url));
+  return Array.from(new Set(candidates));
+}
+
 export async function validateServerAuth(
   context: GetServerSidePropsContext
 ): Promise<User | null> {
   try {
-    // Get cookies from the request
     const cookies = context.req.headers.cookie || '';
     console.log('[Server Auth] Received cookies:', cookies ? cookies.substring(0, 150) + '...' : 'NONE');
-    
-    // Check for Authorization header as fallback (for cross-origin cookie blocking)
+
     const authHeader = context.req.headers.authorization;
     const hasAuthHeader = authHeader && authHeader.startsWith('Bearer ');
     console.log('[Server Auth] Authorization header:', hasAuthHeader ? 'PRESENT' : 'NOT PRESENT');
-    
-    // If no cookies AND no Authorization header, user is not authenticated
+
     const hasAccessTokenInCookies = cookies.includes('access_token');
     if (!hasAccessTokenInCookies && !hasAuthHeader) {
       console.log('[Server Auth] ❌ No access_token in cookies and no Authorization header');
@@ -32,16 +45,9 @@ export async function validateServerAuth(
 
     console.log('[Server Auth] ✅ Token found (cookies or Authorization header), validating...');
 
-    // Call your auth API to validate
-    // Gateway has /api prefix, so we add it here
-    let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5555';
-    // Remove trailing slash if present
-    apiUrl = apiUrl.replace(/\/$/, '');
-    // Add /api only if not already present
-    const baseUrl = apiUrl.endsWith('/api') ? apiUrl : `${apiUrl}/api`;
-    const fullUrl = `${baseUrl}/users/me`;
-    
-    // Build headers - include both cookies and Authorization header
+    const baseUrls = resolveUsersServiceBaseUrls();
+    let lastError: unknown = null;
+
     const headers: Record<string, string> = {};
     if (cookies) {
       headers['Cookie'] = cookies;
@@ -49,48 +55,50 @@ export async function validateServerAuth(
     if (hasAuthHeader && authHeader) {
       headers['Authorization'] = authHeader;
     }
-    
-    const response = await fetch(fullUrl, {
-      headers,
-      credentials: 'include',
-    });
 
-    console.log('[Server Auth] Validation API response status:', response.status);
-    
-    // Log response details for debugging 502 errors
-    if (response.status === 502) {
-      console.error('[Server Auth] ❌ 502 Bad Gateway - API Gateway cannot reach Users service');
-      console.error('[Server Auth] URL attempted:', fullUrl);
-      console.error('[Server Auth] This usually means:');
-      console.error('[Server Auth]   1. Users service is down or crashed');
-      console.error('[Server Auth]   2. USERS_SERVICE_URL is not configured correctly in API Gateway');
-      console.error('[Server Auth]   3. Network issue between API Gateway and Users service');
+    for (const baseUrl of baseUrls) {
+      const fullUrl = `${baseUrl}/users/me`;
       try {
-        const errorText = await response.text();
-        console.error('[Server Auth] Error response:', errorText.substring(0, 500));
-      } catch (e) {
-        console.error('[Server Auth] Could not read error response');
+        const response = await fetch(fullUrl, {
+          headers,
+          credentials: 'include',
+        });
+
+        console.log('[Server Auth] Validation API response status:', response.status, 'via', baseUrl);
+
+        if (!response.ok) {
+          if (response.status >= 500) {
+            lastError = new Error(`Users service returned ${response.status} for ${baseUrl}`);
+            continue;
+          }
+          console.log('[Server Auth] ❌ Validation failed');
+          return null;
+        }
+
+        const data = await response.json();
+        console.log('[Server Auth] API returned:', data);
+
+        const user = data.user || data;
+
+        if (!user || !user.email) {
+          console.log('[Server Auth] ❌ Invalid user data');
+          return null;
+        }
+
+        console.log('[Server Auth] ✅ User validated:', user.email);
+        return user as User;
+      } catch (error) {
+        console.error(`[Server Auth] ❌ Error calling ${baseUrl}:`, error);
+        lastError = error;
+        continue;
       }
     }
 
-    if (!response.ok) {
-      console.log('[Server Auth] ❌ Validation failed');
-      return null;
+    if (lastError) {
+      throw lastError;
     }
 
-    const data = await response.json();
-    console.log('[Server Auth] API returned:', data);
-    
-    // Backend returns { user: {...} }, we need to unwrap it
-    const user = data.user || data;
-    
-    if (!user || !user.email) {
-      console.log('[Server Auth] ❌ Invalid user data');
-      return null;
-    }
-    
-    console.log('[Server Auth] ✅ User validated:', user.email);
-    return user as User;
+    return null;
   } catch (error) {
     console.error('[Server Auth] ❌ Error:', error);
     return null;
@@ -125,6 +133,19 @@ export async function requireAuth(context: GetServerSidePropsContext) {
  * Use in getServerSideProps for login/register pages
  */
 export async function redirectIfAuthenticated(context: GetServerSidePropsContext) {
+  const method = context.req.method?.toUpperCase();
+  const hasLogoutFlag = context.query.logout === '1';
+  const isBrowserLogout = method === 'GET' && hasLogoutFlag;
+
+  if (isBrowserLogout) {
+    console.log('[Login Page Server] Logout flag detected, clearing session cookies');
+    context.res.setHeader('Set-Cookie', [
+      'access_token=; Max-Age=0; Path=/; HttpOnly',
+      'refresh_token=; Max-Age=0; Path=/; HttpOnly',
+      'user_id=; Max-Age=0; Path=/',
+    ]);
+  }
+
   const user = await validateServerAuth(context);
   console.log('[Login Page Server] User check result:', user ? 'logged in' : 'not logged in');
 

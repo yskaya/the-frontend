@@ -9,7 +9,7 @@ import { AuthProvider } from '@/features/auth';
 import { ContactsProvider } from '@/features/contacts';
 import { NotificationProvider, NotificationStack } from '@/components/Notification';
 import { ErrorBoundary, useErrorHandling, useErrorSuppressor } from '@/features/errors';
-import { queryClient, api } from '@/lib';
+import { queryClient, api, walletApi } from '@/lib';
 import { Toaster } from '@/ui/sonner';
 
 import '../globals.css';
@@ -48,6 +48,7 @@ function AppContent({ Component, pageProps }: PaypayAppProps) {
   // Setup API error handler
   useEffect(() => {
     api.setErrorHandler(handleApiError);
+    walletApi.setErrorHandler(handleApiError);
   }, [handleApiError]);
 
   return (

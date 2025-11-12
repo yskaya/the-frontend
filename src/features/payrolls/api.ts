@@ -3,7 +3,7 @@
  * Handles communication with the wallet service payroll payment endpoints
  */
 
-import { api } from '@/lib';
+import { walletApi } from '@/lib';
 import type { PayrollPayment, CreatePayrollPaymentDto, Payroll, CreatePayrollDto } from './types';
 
 // Use gateway URL (relative path) - the API client already has baseURL set
@@ -17,7 +17,7 @@ const PAYROLL_PAYMENTS_BASE_PATH = '/wallet/payroll-payments';
 export async function createPayrollPayment(
   data: CreatePayrollPaymentDto
 ): Promise<PayrollPayment> {
-  const response = await api.post<PayrollPayment>(PAYROLL_PAYMENTS_BASE_PATH, data);
+  const response = await walletApi.post<PayrollPayment>(PAYROLL_PAYMENTS_BASE_PATH, data);
   if (!response.data) {
     throw new Error('Failed to create payroll payment');
   }
@@ -28,7 +28,7 @@ export async function createPayrollPayment(
  * Get all payroll payments for the current user
  */
 export async function getPayrollPayments(): Promise<PayrollPayment[]> {
-  const response = await api.get<PayrollPayment[]>(PAYROLL_PAYMENTS_BASE_PATH);
+  const response = await walletApi.get<PayrollPayment[]>(PAYROLL_PAYMENTS_BASE_PATH);
   return response.data || [];
 }
 
@@ -36,7 +36,7 @@ export async function getPayrollPayments(): Promise<PayrollPayment[]> {
  * Get a specific payroll payment by ID
  */
 export async function getPayrollPayment(id: string): Promise<PayrollPayment> {
-  const response = await api.get<PayrollPayment>(`${PAYROLL_PAYMENTS_BASE_PATH}/${id}`);
+  const response = await walletApi.get<PayrollPayment>(`${PAYROLL_PAYMENTS_BASE_PATH}/${id}`);
   if (!response.data) {
     throw new Error('Payroll payment not found');
   }
@@ -47,7 +47,7 @@ export async function getPayrollPayment(id: string): Promise<PayrollPayment> {
  * Cancel a payroll payment (only if pending)
  */
 export async function cancelPayrollPayment(id: string): Promise<{ message: string }> {
-  const response = await api.delete<{ message: string }>(`${PAYROLL_PAYMENTS_BASE_PATH}/${id}`);
+  const response = await walletApi.delete<{ message: string }>(`${PAYROLL_PAYMENTS_BASE_PATH}/${id}`);
   if (!response.data) {
     throw new Error('Failed to cancel payroll payment');
   }
@@ -64,7 +64,7 @@ const PAYROLL_BASE_PATH = '/wallet/payrolls';
  */
 export async function createPayroll(data: CreatePayrollDto): Promise<Payroll> {
   try {
-    const response = await api.post<Payroll>(PAYROLL_BASE_PATH, data);
+    const response = await walletApi.post<Payroll>(PAYROLL_BASE_PATH, data);
     if (!response.data) {
       throw new Error('Failed to create payroll: No data in response');
     }
@@ -80,7 +80,7 @@ export async function createPayroll(data: CreatePayrollDto): Promise<Payroll> {
  * Get all payrolls for the current user
  */
 export async function getPayrolls(): Promise<Payroll[]> {
-  const response = await api.get<Payroll[]>(PAYROLL_BASE_PATH);
+  const response = await walletApi.get<Payroll[]>(PAYROLL_BASE_PATH);
   return response.data || [];
 }
 
@@ -88,7 +88,7 @@ export async function getPayrolls(): Promise<Payroll[]> {
  * Get a specific payroll by ID
  */
 export async function getPayroll(id: string): Promise<Payroll> {
-  const response = await api.get<Payroll>(`${PAYROLL_BASE_PATH}/${id}`);
+  const response = await walletApi.get<Payroll>(`${PAYROLL_BASE_PATH}/${id}`);
   if (!response.data) {
     throw new Error('Payroll not found');
   }
@@ -102,7 +102,7 @@ export async function signPayroll(
   id: string,
   signature: string
 ): Promise<Payroll> {
-  const response = await api.post<Payroll>(`${PAYROLL_BASE_PATH}/${id}/sign`, {
+  const response = await walletApi.post<Payroll>(`${PAYROLL_BASE_PATH}/${id}/sign`, {
     signature,
   });
   
@@ -117,7 +117,7 @@ export async function signPayroll(
  * Cancel a payroll (only if scheduled)
  */
 export async function cancelPayroll(id: string): Promise<{ message: string }> {
-  const response = await api.delete<{ message: string }>(`${PAYROLL_BASE_PATH}/${id}`);
+  const response = await walletApi.delete<{ message: string }>(`${PAYROLL_BASE_PATH}/${id}`);
   if (!response.data) {
     throw new Error('Failed to cancel payroll');
   }
@@ -128,7 +128,7 @@ export async function cancelPayroll(id: string): Promise<{ message: string }> {
  * Delete a payroll (only if cancelled or failed)
  */
 export async function deletePayroll(id: string): Promise<{ message: string }> {
-  const response = await api.delete<{ message: string }>(`${PAYROLL_BASE_PATH}/${id}`, { action: 'delete' });
+  const response = await walletApi.delete<{ message: string }>(`${PAYROLL_BASE_PATH}/${id}`, { action: 'delete' });
   if (!response.data) {
     throw new Error('Failed to delete payroll');
   }

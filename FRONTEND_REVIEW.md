@@ -134,7 +134,8 @@ balanceUSD: (parseFloat(data.balance) * ethPrice).toFixed(2);
 **Needed:**
 ```env
 # .env.example
-NEXT_PUBLIC_API_URL=http://localhost:5555
+NEXT_PUBLIC_USERS_SERVICE_URL=http://localhost:5002
+NEXT_PUBLIC_WALLET_SERVICE_URL=http://localhost:5006
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-google-client-id
 ```
 

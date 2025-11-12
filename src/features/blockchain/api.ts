@@ -1,5 +1,5 @@
 import { Wallet, Transaction } from './types';
-import { api } from '@/lib';
+import { walletApi } from '@/lib';
 
 // Helper to get user ID from cookie
 const getUserId = (): string => {
@@ -46,7 +46,7 @@ export const createWallet = async (userId?: string): Promise<CreateWalletRespons
   const userIdToUse = userId || getUserId();
   console.log('[createWallet] Using user ID:', userIdToUse);
   
-  const response = await api.post<CreateWalletResponse>('/wallet');
+  const response = await walletApi.post<CreateWalletResponse>('/wallet');
 
   if (response.error || !response.data) {
     const errorMessage = response.error || 'Failed to create wallet';
@@ -64,7 +64,7 @@ export const getWallet = async (userId?: string): Promise<Wallet | null> => {
     const userIdToUse = userId || getUserId();
     console.log('[getWallet] Using user ID:', userIdToUse);
     
-    const response = await api.get<any>('/wallet');
+    const response = await walletApi.get<any>('/wallet');
 
     if (response.error || !response.data) {
       return null;
@@ -122,7 +122,7 @@ export const getWalletWithTransactions = async (
     try {
       console.log('[getWalletWithTransactions] Using user ID:', userIdToUse);
       
-      const response = await api.get<any>(`/wallet/with-transactions?limit=${limit}`);
+      const response = await walletApi.get<any>(`/wallet/with-transactions?limit=${limit}`);
 
       if (response.error || !response.data) {
         return { wallet: null, transactions: [] };
@@ -210,7 +210,7 @@ export const getTransactions = async (): Promise<Transaction[]> => {
     try {
       console.log('[getTransactions] Fetching for user:', userId);
       
-      const response = await api.get<any[]>('/wallet/transactions');
+      const response = await walletApi.get<any[]>('/wallet/transactions');
 
       if (response.error || !response.data) {
         console.error('[getTransactions] Error:', response.error);
@@ -274,7 +274,7 @@ export const getTransactions = async (): Promise<Transaction[]> => {
 export const syncTransactions = async (userId?: string): Promise<{ message: string; newTransactions: number; newIncoming?: number; newOutgoing?: number }> => {
   const userIdToUse = userId || getUserId();
   
-  const response = await api.post<{ message: string; newTransactions: number; newIncoming?: number; newOutgoing?: number }>('/wallet/sync-incoming');
+  const response = await walletApi.post<{ message: string; newTransactions: number; newIncoming?: number; newOutgoing?: number }>('/wallet/sync-incoming');
 
   if (response.error || !response.data) {
     const errorMessage = response.error || 'Failed to sync transactions';
@@ -289,7 +289,7 @@ export const syncTransactions = async (userId?: string): Promise<{ message: stri
  * Now uses the unified API client for proper authentication handling
  */
 export const sendCrypto = async (request: SendTransactionRequest): Promise<SendTransactionResponse> => {
-  const response = await api.post<SendTransactionResponse>('/wallet/send', request);
+  const response = await walletApi.post<SendTransactionResponse>('/wallet/send', request);
   
   if (response.error || !response.data) {
     const errorMessage = response.error || 'Failed to send transaction';

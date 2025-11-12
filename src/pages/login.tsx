@@ -17,7 +17,7 @@ const LoginGoogleButton = dynamic(
   }
 );
 
-export default function LoginPage() {
+export default function LoginPage({ logout }: { logout?: boolean }) {
   // ✨ If this page renders, user is NOT authenticated (verified server-side)
   const router = useRouter();
   const [hasShownSessionToast, setHasShownSessionToast] = useState(false);
@@ -58,7 +58,7 @@ export default function LoginPage() {
         { shallow: true },
       ).catch(() => {});
     }
-  }, [router, hasShownSessionToast]);
+  }, [router, hasShownSessionToast, logout]);
   
   return (
     <div className="dark min-h-screen bg-black flex flex-col items-center justify-center p-8">
@@ -97,5 +97,13 @@ export default function LoginPage() {
 
 // ✨ Server-side check - redirects to dashboard if already logged in
 export const getServerSideProps: GetServerSideProps = async (context) => {
-  return redirectIfAuthenticated(context);
+  const props = await redirectIfAuthenticated(context);
+  if ('redirect' in props) {
+    return props;
+  }
+  return {
+    props: {
+      logout: context.query.logout === '1' ? true : false,
+    },
+  };
 };

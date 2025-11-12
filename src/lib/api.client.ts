@@ -11,21 +11,23 @@ interface ApiResponse<T> {
   error?: string;
 }
 
+const DEFAULT_USERS_URL = process.env.NEXT_PUBLIC_USERS_SERVICE_URL || 'http://localhost:5002';
+const DEFAULT_WALLET_URL = process.env.NEXT_PUBLIC_WALLET_SERVICE_URL || 'http://localhost:5006';
+
+function normalizeBaseUrl(url: string) {
+  let apiUrl = url || '';
+  apiUrl = apiUrl.replace(/\/$/, '');
+  return apiUrl.endsWith('/api') ? apiUrl : `${apiUrl}/api`;
+}
+
 export class ApiClient {
   public client: AxiosInstance;
   private refreshPromise: Promise<void> | null = null;
   private errorHandler?: (error: unknown, context?: string) => void;
 
-  constructor() {
-    // Get base URL and add /api prefix only if not already present
-    // Handle both with and without trailing slash
-    let apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5555';
-    // Remove trailing slash if present
-    apiUrl = apiUrl.replace(/\/$/, '');
-    
-    // Add /api only if not already present
-    const baseURL = apiUrl.endsWith('/api') ? apiUrl : `${apiUrl}/api`;
-    
+  constructor(baseUrl: string = DEFAULT_USERS_URL) {
+    const baseURL = normalizeBaseUrl(baseUrl);
+
     this.client = axios.create({
       baseURL,
       withCredentials: true, // Important for cookies
@@ -196,4 +198,6 @@ export class ApiClient {
 }
 
 export const api = new ApiClient();
+export const usersApi = api;
+export const walletApi = new ApiClient(DEFAULT_WALLET_URL);
 
